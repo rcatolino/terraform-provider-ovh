@@ -21,62 +21,7 @@ func OkmsCredentialsDataSourceSchema(ctx context.Context) schema.Schema {
 	attrs := map[string]schema.Attribute{
 		"okms_credentials": schema.SetNestedAttribute{
 			NestedObject: schema.NestedAttributeObject{
-				Attributes: map[string]schema.Attribute{
-					"certificate_pem": schema.StringAttribute{
-						CustomType:          ovhtypes.TfStringType{},
-						Computed:            true,
-						Description:         "Certificate PEM of the credential",
-						MarkdownDescription: "Certificate PEM of the credential",
-					},
-					"created_at": schema.StringAttribute{
-						CustomType:          ovhtypes.TfStringType{},
-						Computed:            true,
-						Description:         "Creation time of the credential",
-						MarkdownDescription: "Creation time of the credential",
-					},
-					"description": schema.StringAttribute{
-						CustomType:          ovhtypes.TfStringType{},
-						Computed:            true,
-						Description:         "Description of the credential",
-						MarkdownDescription: "Description of the credential",
-					},
-					"expired_at": schema.StringAttribute{
-						CustomType:          ovhtypes.TfStringType{},
-						Computed:            true,
-						Description:         "Expiration time of the credential",
-						MarkdownDescription: "Expiration time of the credential",
-					},
-					"from_csr": schema.BoolAttribute{
-						CustomType:          ovhtypes.TfBoolType{},
-						Computed:            true,
-						Description:         "Is the credential generated from CSR",
-						MarkdownDescription: "Is the credential generated from CSR",
-					},
-					"id": schema.StringAttribute{
-						CustomType:          ovhtypes.TfStringType{},
-						Computed:            true,
-						Description:         "ID of the credential",
-						MarkdownDescription: "ID of the credential",
-					},
-					"identity_urns": schema.ListAttribute{
-						CustomType:          ovhtypes.NewTfListNestedType[ovhtypes.TfStringValue](ctx),
-						Computed:            true,
-						Description:         "List of identity URNs associated with the credential",
-						MarkdownDescription: "List of identity URNs associated with the credential",
-					},
-					"name": schema.StringAttribute{
-						CustomType:          ovhtypes.TfStringType{},
-						Computed:            true,
-						Description:         "Name of the credential",
-						MarkdownDescription: "Name of the credential",
-					},
-					"status": schema.StringAttribute{
-						CustomType:          ovhtypes.TfStringType{},
-						Computed:            true,
-						Description:         "Status of the credential",
-						MarkdownDescription: "Status of the credential",
-					},
-				},
+				Attributes: OkmsCredentialAttributes(ctx),
 				CustomType: OkmsCredentialsType{
 					ObjectType: types.ObjectType{
 						AttrTypes: OkmsCredentialsValue{}.AttributeTypes(ctx),
@@ -851,24 +796,24 @@ func (v OkmsCredentialsValue) ToObjectValue(ctx context.Context) (basetypes.Obje
 		map[string]attr.Type{
 			"certificate_pem": ovhtypes.TfStringType{},
 			"created_at":      ovhtypes.TfStringType{},
-			"description":     ovhtypes.TfStringType{},
-			"expired_at":      ovhtypes.TfStringType{},
-			"from_csr":        ovhtypes.TfBoolType{},
-			"id":              ovhtypes.TfStringType{},
-			"identity_urns":   ovhtypes.NewTfListNestedType[ovhtypes.TfStringValue](ctx),
-			"name":            ovhtypes.TfStringType{},
-			"status":          ovhtypes.TfStringType{},
+			"description":   ovhtypes.TfStringType{},
+			"expired_at":    ovhtypes.TfStringType{},
+			"from_csr":      ovhtypes.TfBoolType{},
+			"id":            ovhtypes.TfStringType{},
+			"identity_urns": ovhtypes.NewTfListNestedType[ovhtypes.TfStringValue](ctx),
+			"name":          ovhtypes.TfStringType{},
+			"status":        ovhtypes.TfStringType{},
 		},
 		map[string]attr.Value{
 			"certificate_pem": v.CertificatePem,
 			"created_at":      v.CreatedAt,
-			"description":     v.Description,
-			"expired_at":      v.ExpiredAt,
-			"from_csr":        v.FromCsr,
-			"id":              v.Id,
-			"identity_urns":   v.IdentityUrns,
-			"name":            v.Name,
-			"status":          v.Status,
+			"description":   v.Description,
+			"expired_at":    v.ExpiredAt,
+			"from_csr":      v.FromCsr,
+			"id":            v.Id,
+			"identity_urns": v.IdentityUrns,
+			"name":          v.Name,
+			"status":        v.Status,
 		})
 
 	return objVal, diags
