@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	ovhtypes "github.com/ovh/terraform-provider-ovh/ovh/types"
 )
 
 var _ datasource.DataSourceWithConfigure = (*okmsServiceKeysDataSource)(nil)
@@ -56,7 +57,7 @@ func (d *okmsServiceKeysDataSource) Read(ctx context.Context, req datasource.Rea
 	}
 
 	// Read API call logic
-	endpoint := "/okms/resource/" + url.PathEscape(data.OkmsId.ValueString()) + "/serviceKey"
+	endpoint := "/v2/okms/resource/" + url.PathEscape(data.OkmsId.ValueString()) + "/serviceKey"
 
 	var arr []OkmsServiceKeysValue
 
