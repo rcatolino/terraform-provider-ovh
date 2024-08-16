@@ -207,6 +207,7 @@ func (p *OvhProvider) DataSources(_ context.Context) []func() datasource.DataSou
 		NewOkmsResourceDataSource,
 		NewOkmsServiceKeysDataSource,
 		NewOkmsServiceKeyDataSource,
+		NewOkmsServiceKeyJwkDataSource,
 	}
 }
 
