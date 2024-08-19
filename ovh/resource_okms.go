@@ -55,7 +55,22 @@ func (d *okmsResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 }
 
 func (r *okmsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("service_name"), req.ID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+
+	var data OkmsModel
+	endpoint := "/v2/okms/resource/" + url.PathEscape(req.ID)
+
+	if err := r.config.OVHClient.Get(endpoint, &data); err != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Error calling Get %s", endpoint),
+			err.Error(),
+		)
+		return
+	}
+
+	// Save data into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+
 }
 
 func (r *okmsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -87,37 +102,33 @@ func (r *okmsResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	id, err := idFromOrder(r.config.OVHClient, orderID, plans[0].PlanCode.ValueString())
+	id, err := serviceNameFromOrder(r.config.OVHClient, orderID, plans[0].PlanCode.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to retrieve service name", err.Error())
 	}
+
 	data.Id = types.TfStringValue{
 		StringValue: basetypes.NewStringValue(id),
 	}
 
-	// Update resource
-	/* why though ?
-	endpoint := "/v2/okms/" + url.PathEscape(data.Id.ValueString())
-	if err := r.config.OVHClient.Put(endpoint, data.ToUpdate(), nil); err != nil {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Error calling Put %s", endpoint),
-			err.Error(),
-		)
-		return
-	}
+	var responseData OkmsModel
+	// Read updated resource & update corresponding tf resource state
+	err = retry.RetryContext(ctx, 2*time.Minute, func() *retry.RetryError {
+		// Read updated resource
+		endpoint := "/v2/okms/resource" + url.PathEscape(id)
+		if err := r.config.OVHClient.Get(endpoint, &responseData); err != nil {
+			return retry.NonRetryableError(fmt.Errorf("error calling GET %s", endpoint))
+		}
 
-	// Read updated resource
-	responseData, err := r.waitForVPSUpdate(ctx, id, &data)
+		resp.Diagnostics.AddWarning("Get "+endpoint+"failed", err.Error())
+		return retry.RetryableError(errors.New("waiting for KMS creation timeout"))
+	})
+
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error fetching updated resource",
-			err.Error(),
-		)
-		return
+		resp.Diagnostics.AddError("Failed to create KMS, creation timeout", err.Error())
 	}
 
-	data.MergeWith(responseData)
-	*/
+	data.MergeWith(&responseData)
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -133,7 +144,7 @@ func (r *okmsResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 
 	// Read API call logic
-	endpoint := "/v2/okms/resource/" + url.PathEscape(data.OkmsId.ValueString()) + ""
+	endpoint := "/v2/okms/resource/" + url.PathEscape(data.Id.ValueString())
 
 	if err := r.config.OVHClient.Get(endpoint, &data); err != nil {
 		resp.Diagnostics.AddError(
@@ -175,11 +186,23 @@ func (r *okmsResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	}
 
 	id := data.Id.ValueString()
+	serviceId, err := serviceIdFromResourceName(r.config.OVHClient, id)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Error locating service okms %s", id),
+			err.Error(),
+		)
+		return
+	}
+
+	type TerminateServiceOption struct {
+		ServiceId int `json:"serviceId"`
+	}
 
 	terminate := func() (string, error) {
-		log.Printf("[DEBUG] Will terminate okms %s", id)
-		endpoint := fmt.Sprintf("/v2/okms/%s", url.PathEscape(id))
-		if err := r.config.OVHClient.Delete(endpoint, nil); err != nil {
+		log.Printf("[DEBUG] Will terminate okms %s (service %d)", id, serviceId)
+		endpoint := fmt.Sprintf("/services/%d/terminate", serviceId)
+		if err := r.config.OVHClient.Post(endpoint, nil, nil); err != nil {
 			if errOvh, ok := err.(*ovh.APIError); ok && (errOvh.Code == 404 || errOvh.Code == 460) {
 				return "", nil
 			}
@@ -190,7 +213,7 @@ func (r *okmsResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	confirmTerminate := func(token string) error {
 		log.Printf("[DEBUG] Will confirm termination of okms %s", id)
-		endpoint := fmt.Sprintf("/okms/%s/confirmTermination", url.PathEscape(id))
+		endpoint := fmt.Sprintf("/services/%d/terminate/confirm", serviceId)
 		if err := r.config.OVHClient.Post(endpoint, &ConfirmTerminationOpts{Token: token}, nil); err != nil {
 			return fmt.Errorf("calling Post %s:\n\t %q", endpoint, err)
 		}

@@ -164,8 +164,7 @@ func OrderResourceSchema(ctx context.Context) schema.Schema {
 					},
 				},
 				CustomType: ovhtypes.NewTfListNestedType[PlanValue](ctx),
-				Optional:   true,
-				Computed:   true,
+				Required:   true,
 			},
 			"plan_option": schema.ListNestedAttribute{
 				NestedObject: schema.NestedAttributeObject{

@@ -65,12 +65,7 @@ func OkmsResourceSchema(ctx context.Context) schema.Schema {
 			Description:         "Add KMS public CA (Certificate Authority) in the output",
 			MarkdownDescription: "Add KMS public CA (Certificate Authority) in the output",
 		},
-		"region": schema.StringAttribute{
-			CustomType:          ovhtypes.TfStringType{},
-			Required:            true,
-			Description:         "Region",
-			MarkdownDescription: "Region",
-		},
+		// TODO: add region as a required first level parameter instead of a plan option
 		"rest_endpoint": schema.StringAttribute{
 			CustomType:          ovhtypes.TfStringType{},
 			Computed:            true,
@@ -85,24 +80,27 @@ func OkmsResourceSchema(ctx context.Context) schema.Schema {
 		},
 	}
 
+	// Add order attributes
+	for k, v := range OrderResourceSchema(ctx).Attributes {
+		attrs[k] = v
+	}
+
 	return schema.Schema{
 		Attributes: attrs,
 	}
 }
 
 type OkmsModel struct {
-	Iam             IamValue               `tfsdk:"iam" json:"iam"`
-	Id              ovhtypes.TfStringValue `tfsdk:"id" json:"id"`
-	KmipEndpoint    ovhtypes.TfStringValue `tfsdk:"kmip_endpoint" json:"kmipEndpoint"`
-	OkmsId          ovhtypes.TfStringValue `tfsdk:"okms_id" json:"okmsId"`
-	PublicCa        ovhtypes.TfBoolValue   `tfsdk:"public_ca" json:"publicCa"`
-	Region          ovhtypes.TfStringValue `tfsdk:"region" json:"region"`
-	RestEndpoint    ovhtypes.TfStringValue `tfsdk:"rest_endpoint" json:"restEndpoint"`
-	SwaggerEndpoint ovhtypes.TfStringValue `tfsdk:"swagger_endpoint" json:"swaggerEndpoint"`
-	Order         OrderValue                                  `tfsdk:"order" json:"order"`
-	OvhSubsidiary ovhtypes.TfStringValue                      `tfsdk:"ovh_subsidiary" json:"ovhSubsidiary"`
-	Plan          ovhtypes.TfListNestedValue[PlanValue]       `tfsdk:"plan" json:"plan"`
-	PlanOption    ovhtypes.TfListNestedValue[PlanOptionValue] `tfsdk:"plan_option" json:"planOption"`
+	Iam             IamValue                                    `tfsdk:"iam" json:"iam"`
+	Id              ovhtypes.TfStringValue                      `tfsdk:"id" json:"id"`
+	KmipEndpoint    ovhtypes.TfStringValue                      `tfsdk:"kmip_endpoint" json:"kmipEndpoint"`
+	PublicCa        ovhtypes.TfBoolValue                        `tfsdk:"public_ca" json:"publicCa"`
+	RestEndpoint    ovhtypes.TfStringValue                      `tfsdk:"rest_endpoint" json:"restEndpoint"`
+	SwaggerEndpoint ovhtypes.TfStringValue                      `tfsdk:"swagger_endpoint" json:"swaggerEndpoint"`
+	Order           OrderValue                                  `tfsdk:"order" json:"order"`
+	OvhSubsidiary   ovhtypes.TfStringValue                      `tfsdk:"ovh_subsidiary" json:"ovhSubsidiary"`
+	Plan            ovhtypes.TfListNestedValue[PlanValue]       `tfsdk:"plan" json:"plan"`
+	PlanOption      ovhtypes.TfListNestedValue[PlanOptionValue] `tfsdk:"plan_option" json:"planOption"`
 }
 
 func (v *OkmsModel) MergeWith(other *OkmsModel) {
@@ -119,16 +117,8 @@ func (v *OkmsModel) MergeWith(other *OkmsModel) {
 		v.KmipEndpoint = other.KmipEndpoint
 	}
 
-	if (v.OkmsId.IsUnknown() || v.OkmsId.IsNull()) && !other.OkmsId.IsUnknown() {
-		v.OkmsId = other.OkmsId
-	}
-
 	if (v.PublicCa.IsUnknown() || v.PublicCa.IsNull()) && !other.PublicCa.IsUnknown() {
 		v.PublicCa = other.PublicCa
-	}
-
-	if (v.Region.IsUnknown() || v.Region.IsNull()) && !other.Region.IsUnknown() {
-		v.Region = other.Region
 	}
 
 	if (v.RestEndpoint.IsUnknown() || v.RestEndpoint.IsNull()) && !other.RestEndpoint.IsUnknown() {
@@ -137,6 +127,24 @@ func (v *OkmsModel) MergeWith(other *OkmsModel) {
 
 	if (v.SwaggerEndpoint.IsUnknown() || v.SwaggerEndpoint.IsNull()) && !other.SwaggerEndpoint.IsUnknown() {
 		v.SwaggerEndpoint = other.SwaggerEndpoint
+	}
+
+	if v.Order.IsUnknown() && !other.Order.IsUnknown() {
+		v.Order = other.Order
+	} else if !other.Order.IsUnknown() {
+		v.Order.MergeWith(&other.Order)
+	}
+
+	if (v.OvhSubsidiary.IsUnknown() || v.OvhSubsidiary.IsNull()) && !other.OvhSubsidiary.IsUnknown() {
+		v.OvhSubsidiary = other.OvhSubsidiary
+	}
+
+	if (v.Plan.IsUnknown() || v.Plan.IsNull()) && !other.Plan.IsUnknown() {
+		v.Plan = other.Plan
+	}
+
+	if (v.PlanOption.IsUnknown() || v.PlanOption.IsNull()) && !other.PlanOption.IsUnknown() {
+		v.PlanOption = other.PlanOption
 	}
 
 }
