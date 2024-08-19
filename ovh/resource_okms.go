@@ -29,6 +29,15 @@ type okmsResource struct {
 	config *Config
 }
 
+func (r *okmsResource) getOkmsById(id string, data *OkmsModel) error {
+	endpoint := "/v2/okms/resource/" + url.PathEscape(id) + "?publicCA=true"
+	if err := r.config.OVHClient.Get(endpoint, &data); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *okmsResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_okms"
 }
@@ -56,13 +65,10 @@ func (d *okmsResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 
 func (r *okmsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
-
 	var data OkmsModel
-	endpoint := "/v2/okms/resource/" + url.PathEscape(req.ID)
-
-	if err := r.config.OVHClient.Get(endpoint, &data); err != nil {
+	if err := r.getOkmsById(req.ID, &data); err != nil {
 		resp.Diagnostics.AddError(
-			fmt.Sprintf("Error calling Get %s", endpoint),
+			fmt.Sprintf("Error calling reading KMS %s", req.ID),
 			err.Error(),
 		)
 		return
@@ -70,7 +76,6 @@ func (r *okmsResource) ImportState(ctx context.Context, req resource.ImportState
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-
 }
 
 func (r *okmsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -115,12 +120,15 @@ func (r *okmsResource) Create(ctx context.Context, req resource.CreateRequest, r
 	// Read updated resource & update corresponding tf resource state
 	err = retry.RetryContext(ctx, 2*time.Minute, func() *retry.RetryError {
 		// Read updated resource
-		endpoint := "/v2/okms/resource" + url.PathEscape(id)
-		if err := r.config.OVHClient.Get(endpoint, &responseData); err != nil {
-			return retry.NonRetryableError(fmt.Errorf("error calling GET %s", endpoint))
+		if err := r.getOkmsById(id, &responseData); err != nil {
+			return retry.NonRetryableError(fmt.Errorf("error reading KMS %s", id))
 		}
 
-		resp.Diagnostics.AddWarning("Get "+endpoint+"failed", err.Error())
+		// KMS was created successfully, return
+		if responseData.Id.ValueString() == id {
+			return nil
+		}
+
 		return retry.RetryableError(errors.New("waiting for KMS creation timeout"))
 	})
 
@@ -137,18 +145,14 @@ func (r *okmsResource) Create(ctx context.Context, req resource.CreateRequest, r
 func (r *okmsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data OkmsModel
 
-	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Read API call logic
-	endpoint := "/v2/okms/resource/" + url.PathEscape(data.Id.ValueString())
-
-	if err := r.config.OVHClient.Get(endpoint, &data); err != nil {
+	if err := r.getOkmsById(data.Id.ValueString(), &data); err != nil {
 		resp.Diagnostics.AddError(
-			fmt.Sprintf("Error calling Get %s", endpoint),
+			fmt.Sprintf("Error reading KMS %s", data.Id.ValueString()),
 			err.Error(),
 		)
 		return

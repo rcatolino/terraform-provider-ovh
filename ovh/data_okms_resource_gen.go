@@ -66,12 +66,12 @@ func OkmsResourceDataSourceSchema(ctx context.Context) schema.Schema {
 			Description:         "Okms ID",
 			MarkdownDescription: "Okms ID",
 		},
-		"public_ca": schema.BoolAttribute{
-			CustomType:          ovhtypes.TfBoolType{},
+		"public_ca": schema.StringAttribute{
+			CustomType:          ovhtypes.TfStringType{},
 			Optional:            true,
 			Computed:            true,
-			Description:         "Add KMS public CA (Certificate Authority) in the output",
-			MarkdownDescription: "Add KMS public CA (Certificate Authority) in the output",
+			Description:         "KMS public CA (Certificate Authority)",
+			MarkdownDescription: "KMS public CA (Certificate Authority)",
 		},
 		"region": schema.StringAttribute{
 			CustomType:          ovhtypes.TfStringType{},
@@ -103,7 +103,7 @@ type OkmsResourceModel struct {
 	Id              ovhtypes.TfStringValue `tfsdk:"id" json:"id"`
 	KmipEndpoint    ovhtypes.TfStringValue `tfsdk:"kmip_endpoint" json:"kmipEndpoint"`
 	OkmsId          ovhtypes.TfStringValue `tfsdk:"okms_id" json:"okmsId"`
-	PublicCa        ovhtypes.TfBoolValue   `tfsdk:"public_ca" json:"publicCa"`
+	PublicCa        ovhtypes.TfStringValue `tfsdk:"public_ca" json:"publicCa"`
 	Region          ovhtypes.TfStringValue `tfsdk:"region" json:"region"`
 	RestEndpoint    ovhtypes.TfStringValue `tfsdk:"rest_endpoint" json:"restEndpoint"`
 	SwaggerEndpoint ovhtypes.TfStringValue `tfsdk:"swagger_endpoint" json:"swaggerEndpoint"`

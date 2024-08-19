@@ -54,7 +54,7 @@ func (d *okmsResourceDataSource) Read(ctx context.Context, req datasource.ReadRe
 	}
 
 	// Read API call logic
-	endpoint := "/v2/okms/resource/" + url.PathEscape(data.OkmsId.ValueString()) + ""
+	endpoint := "/v2/okms/resource/" + url.PathEscape(data.OkmsId.ValueString()) + "?publicCA=true"
 
 	if err := d.config.OVHClient.Get(endpoint, &data); err != nil {
 		resp.Diagnostics.AddError(

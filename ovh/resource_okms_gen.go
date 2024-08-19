@@ -58,12 +58,12 @@ func OkmsResourceSchema(ctx context.Context) schema.Schema {
 			Description:         "KMS kmip API endpoint",
 			MarkdownDescription: "KMS kmip API endpoint",
 		},
-		"public_ca": schema.BoolAttribute{
-			CustomType:          ovhtypes.TfBoolType{},
+		"public_ca": schema.StringAttribute{
+			CustomType:          ovhtypes.TfStringType{},
 			Optional:            true,
 			Computed:            true,
-			Description:         "Add KMS public CA (Certificate Authority) in the output",
-			MarkdownDescription: "Add KMS public CA (Certificate Authority) in the output",
+			Description:         "KMS public CA (Certificate Authority)",
+			MarkdownDescription: "KMS public CA (Certificate Authority)",
 		},
 		// TODO: add region as a required first level parameter instead of a plan option
 		"rest_endpoint": schema.StringAttribute{
@@ -94,7 +94,7 @@ type OkmsModel struct {
 	Iam             IamValue                                    `tfsdk:"iam" json:"iam"`
 	Id              ovhtypes.TfStringValue                      `tfsdk:"id" json:"id"`
 	KmipEndpoint    ovhtypes.TfStringValue                      `tfsdk:"kmip_endpoint" json:"kmipEndpoint"`
-	PublicCa        ovhtypes.TfBoolValue                        `tfsdk:"public_ca" json:"publicCa"`
+	PublicCa        ovhtypes.TfStringValue                      `tfsdk:"public_ca" json:"publicCa"`
 	RestEndpoint    ovhtypes.TfStringValue                      `tfsdk:"rest_endpoint" json:"restEndpoint"`
 	SwaggerEndpoint ovhtypes.TfStringValue                      `tfsdk:"swagger_endpoint" json:"swaggerEndpoint"`
 	Order           OrderValue                                  `tfsdk:"order" json:"order"`
