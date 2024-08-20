@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -35,6 +36,7 @@ func (r *okmsResource) getOkmsById(id string, data *OkmsModel) error {
 		return err
 	}
 
+	data.DisplayName = data.Iam.DisplayName
 	return nil
 }
 
@@ -99,7 +101,6 @@ func (r *okmsResource) Create(ctx context.Context, req resource.CreateRequest, r
 		resp.Diagnostics.AddError("failed to create order", err.Error())
 	}
 
-	// Find service name from order
 	orderID := order.Order.OrderId.ValueInt64()
 	plans := []PlanValue{}
 	resp.Diagnostics.Append(data.Plan.ElementsAs(ctx, &plans, false)...)
@@ -107,6 +108,7 @@ func (r *okmsResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
+	// Find service name from order
 	id, err := serviceNameFromOrder(r.config.OVHClient, orderID, plans[0].PlanCode.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to retrieve service name", err.Error())
@@ -137,6 +139,15 @@ func (r *okmsResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	data.MergeWith(&responseData)
+	// Update service displayName
+	if r.updateServiceDisplayName(
+		data.Id.ValueString(),
+		data.DisplayName.ValueString(),
+		&resp.Diagnostics,
+	) == nil {
+		// Update IAM display name as well
+		data.Iam.DisplayName = data.DisplayName
+	}
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -162,6 +173,31 @@ func (r *okmsResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
+func (r *okmsResource) updateServiceDisplayName(serviceName string, displayName string, diagnostics *diag.Diagnostics) error {
+	serviceId, err := serviceIdFromResourceName(r.config.OVHClient, serviceName)
+	if err != nil {
+		diagnostics.AddError(
+			fmt.Sprintf("Error locating KMS %s", serviceName),
+			err.Error(),
+		)
+		return err
+	}
+
+	endpoint := fmt.Sprintf("/services/%d", serviceId)
+	if err := r.config.OVHClient.Put(endpoint, &ServiceUpdatePayload{
+		DisplayName: displayName,
+	}, nil); err != nil {
+		log.Printf("[WARN] update failed : %v", err)
+		diagnostics.AddError(
+			fmt.Sprintf("Failed to update display name for service %d", serviceId),
+			err.Error(),
+		)
+		return err
+	}
+
+	return nil
+}
+
 func (r *okmsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data, planData OkmsModel
 
@@ -177,7 +213,21 @@ func (r *okmsResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	// TODO: there's nothing to update, we always have to recreate.
+	if planData.DisplayName.ValueString() != data.DisplayName.ValueString() {
+		// Update service displayName
+		log.Printf("[OKMS] updating display name for %s to %s", data.Id.ValueString(), planData.DisplayName.ValueString())
+		if r.updateServiceDisplayName(
+			data.Id.ValueString(),
+			planData.DisplayName.ValueString(),
+			&resp.Diagnostics,
+		) == nil {
+			log.Printf("[OKMS] update success")
+			// Save data into Terraform state
+			data.DisplayName = planData.DisplayName
+			data.Iam.DisplayName = planData.DisplayName
+			resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+		}
+	}
 }
 
 func (r *okmsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {

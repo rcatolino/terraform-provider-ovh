@@ -10,6 +10,13 @@ import (
 
 func OkmsResourceSchema(ctx context.Context) schema.Schema {
 	attrs := map[string]schema.Attribute{
+		"display_name": schema.StringAttribute{
+			CustomType:          ovhtypes.TfStringType{},
+			Optional:            true,
+			Computed:            true,
+			Description:         "Set the name displayed in Manager for this KMS",
+			MarkdownDescription: "Set the name displayed in Manager for this KMS",
+		},
 		"iam": schema.SingleNestedAttribute{
 			Attributes: map[string]schema.Attribute{
 				"display_name": schema.StringAttribute{
@@ -91,6 +98,7 @@ func OkmsResourceSchema(ctx context.Context) schema.Schema {
 }
 
 type OkmsModel struct {
+	DisplayName     ovhtypes.TfStringValue                      `tfsdk:"display_name" json:"displayName"`
 	Iam             IamValue                                    `tfsdk:"iam" json:"iam"`
 	Id              ovhtypes.TfStringValue                      `tfsdk:"id" json:"id"`
 	KmipEndpoint    ovhtypes.TfStringValue                      `tfsdk:"kmip_endpoint" json:"kmipEndpoint"`
@@ -104,6 +112,10 @@ type OkmsModel struct {
 }
 
 func (v *OkmsModel) MergeWith(other *OkmsModel) {
+
+	if (v.DisplayName.IsUnknown() || v.DisplayName.IsNull()) && !other.DisplayName.IsUnknown() {
+		v.DisplayName = other.DisplayName
+	}
 
 	if (v.Iam.IsUnknown() || v.Iam.IsNull()) && !other.Iam.IsUnknown() {
 		v.Iam = other.Iam
