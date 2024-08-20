@@ -583,7 +583,7 @@ type OkmsCredentialsValue struct {
 	ExpiredAt      ovhtypes.TfStringValue                             `tfsdk:"expired_at" json:"expiredAt"`
 	FromCsr        ovhtypes.TfBoolValue                               `tfsdk:"from_csr" json:"fromCsr"`
 	Id             ovhtypes.TfStringValue                             `tfsdk:"id" json:"id"`
-	IdentityUrns   ovhtypes.TfListNestedValue[ovhtypes.TfStringValue] `tfsdk:"identity_urns" json:"identityUrns"`
+	IdentityUrns   ovhtypes.TfListNestedValue[ovhtypes.TfStringValue] `tfsdk:"identity_urns" json:"identityURNs"`
 	Name           ovhtypes.TfStringValue                             `tfsdk:"name" json:"name"`
 	Status         ovhtypes.TfStringValue                             `tfsdk:"status" json:"status"`
 	state          attr.ValueState
