@@ -70,14 +70,6 @@ func OkmsCredentialAttributes(ctx context.Context) map[string]schema.Attribute {
 
 func OkmsCredentialDataSourceSchema(ctx context.Context) schema.Schema {
 	credAttrs := OkmsCredentialAttributes(ctx)
-	/*
-		credAttrs["credential_id"] = schema.StringAttribute{
-			CustomType:          ovhtypes.TfStringType{},
-			Required:            true,
-			Description:         "Credential ID",
-			MarkdownDescription: "Credential ID",
-		}
-	*/
 	credAttrs["id"] = schema.StringAttribute{
 		CustomType:          ovhtypes.TfStringType{},
 		Required:            true,
@@ -97,38 +89,18 @@ func OkmsCredentialDataSourceSchema(ctx context.Context) schema.Schema {
 	}
 }
 
-// TODO: duplicate for resources
 type OkmsCredentialModel struct {
-	CertificatePem ovhtypes.TfStringValue `tfsdk:"certificate_pem" json:"certificatePem"`
-	CreatedAt      ovhtypes.TfStringValue `tfsdk:"created_at" json:"createdAt"`
-	//CredentialId   ovhtypes.TfStringValue                             `tfsdk:"credential_id" json:"credentialId"`
-	Csr           ovhtypes.TfStringValue                             `tfsdk:"csr" json:"csr"`
-	Description   ovhtypes.TfStringValue                             `tfsdk:"description" json:"description"`
-	ExpiredAt     ovhtypes.TfStringValue                             `tfsdk:"expired_at" json:"expiredAt"`
-	FromCsr       ovhtypes.TfBoolValue                               `tfsdk:"from_csr" json:"fromCsr"`
-	Id            ovhtypes.TfStringValue                             `tfsdk:"id" json:"id"`
-	IdentityUrns  ovhtypes.TfListNestedValue[ovhtypes.TfStringValue] `tfsdk:"identity_urns" json:"identityURNs"`
-	Name          ovhtypes.TfStringValue                             `tfsdk:"name" json:"name"`
-	OkmsId        ovhtypes.TfStringValue                             `tfsdk:"okms_id" json:"okmsId"`
-	PrivateKeyPem ovhtypes.TfStringValue                             `tfsdk:"private_key_pem" json:"privateKeyPem"`
-	Status        ovhtypes.TfStringValue                             `tfsdk:"status" json:"status"`
-	Validity      ovhtypes.TfInt64Value                              `tfsdk:"validity" json:"validity"`
+	CertificatePem ovhtypes.TfStringValue                             `tfsdk:"certificate_pem" json:"certificatePem"`
+	CreatedAt      ovhtypes.TfStringValue                             `tfsdk:"created_at" json:"createdAt"`
+	Description    ovhtypes.TfStringValue                             `tfsdk:"description" json:"description"`
+	ExpiredAt      ovhtypes.TfStringValue                             `tfsdk:"expired_at" json:"expiredAt"`
+	FromCsr        ovhtypes.TfBoolValue                               `tfsdk:"from_csr" json:"fromCsr"`
+	Id             ovhtypes.TfStringValue                             `tfsdk:"id" json:"id"`
+	IdentityUrns   ovhtypes.TfListNestedValue[ovhtypes.TfStringValue] `tfsdk:"identity_urns" json:"identityURNs"`
+	Name           ovhtypes.TfStringValue                             `tfsdk:"name" json:"name"`
+	OkmsId         ovhtypes.TfStringValue                             `tfsdk:"okms_id" json:"okmsId"`
+	Status         ovhtypes.TfStringValue                             `tfsdk:"status" json:"status"`
 }
-
-/*
-func (o *OkmsCredentialModel) UnmarshalJSON(data []byte) error {
-	type JsonOkmsCredential OkmsCredentialModel
-
-	var tmp JsonOkmsCredential
-	if err := json.Unmarshal(data, &tmp); err != nil {
-		return err
-	}
-
-	output := OkmsCredentialModel(tmp)
-	o.MergeWith(&output)
-	return nil
-}
-*/
 
 func (o *OkmsCredentialModel) MergeWith(other *OkmsCredentialModel) {
 
@@ -138,16 +110,6 @@ func (o *OkmsCredentialModel) MergeWith(other *OkmsCredentialModel) {
 
 	if (o.CreatedAt.IsUnknown() || o.CreatedAt.IsNull()) && !other.CreatedAt.IsUnknown() {
 		o.CreatedAt = other.CreatedAt
-	}
-
-	/*
-		if (o.CredentialId.IsUnknown() || o.CredentialId.IsNull()) && !other.CredentialId.IsUnknown() {
-			o.CredentialId = other.CredentialId
-		}
-	*/
-
-	if (o.Csr.IsUnknown() || o.Csr.IsNull()) && !other.Csr.IsUnknown() {
-		o.Csr = other.Csr
 	}
 
 	if (o.Description.IsUnknown() || o.Description.IsNull()) && !other.Description.IsUnknown() {
@@ -178,16 +140,7 @@ func (o *OkmsCredentialModel) MergeWith(other *OkmsCredentialModel) {
 		o.OkmsId = other.OkmsId
 	}
 
-	if (o.PrivateKeyPem.IsUnknown() || o.PrivateKeyPem.IsNull()) && !other.PrivateKeyPem.IsUnknown() {
-		o.PrivateKeyPem = other.PrivateKeyPem
-	}
-
 	if (o.Status.IsUnknown() || o.Status.IsNull()) && !other.Status.IsUnknown() {
 		o.Status = other.Status
 	}
-
-	if (o.Validity.IsUnknown() || o.Validity.IsNull()) && !other.Validity.IsUnknown() {
-		o.Validity = other.Validity
-	}
-
 }

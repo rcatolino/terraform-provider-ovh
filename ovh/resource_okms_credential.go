@@ -61,7 +61,7 @@ func (r *okmsCredentialResource) ImportState(ctx context.Context, req resource.I
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("okms_id"), ids[0])...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), ids[1])...)
 
-	var data OkmsCredentialModel
+	var data OkmsCredentialResourceModel
 	resp.Diagnostics.Append(resp.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -81,7 +81,7 @@ func (r *okmsCredentialResource) ImportState(ctx context.Context, req resource.I
 }
 
 func (r *okmsCredentialResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data, responseData OkmsCredentialModel
+	var data, responseData OkmsCredentialResourceModel
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
@@ -101,7 +101,7 @@ func (r *okmsCredentialResource) Create(ctx context.Context, req resource.Create
 
 	responseData.MergeWith(&data)
 
-	var updateData OkmsCredentialModel
+	var updateData OkmsCredentialResourceModel
 	// Read updated credential to get the certificate
 	err := retry.RetryContext(ctx, 2*time.Minute, func() *retry.RetryError {
 		// Read updated resource
@@ -137,7 +137,7 @@ func (r *okmsCredentialResource) Create(ctx context.Context, req resource.Create
 }
 
 func (r *okmsCredentialResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data, responseData OkmsCredentialModel
+	var data, responseData OkmsCredentialResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
@@ -162,7 +162,7 @@ func (r *okmsCredentialResource) Read(ctx context.Context, req resource.ReadRequ
 }
 
 func (r *okmsCredentialResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var data, planData OkmsCredentialModel
+	var data, planData OkmsCredentialResourceModel
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &planData)...)
@@ -186,7 +186,7 @@ func (r *okmsCredentialResource) Update(ctx context.Context, req resource.Update
 }
 
 func (r *okmsCredentialResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data OkmsCredentialModel
+	var data OkmsCredentialResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)

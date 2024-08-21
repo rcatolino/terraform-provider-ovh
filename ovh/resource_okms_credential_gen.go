@@ -21,14 +21,6 @@ func OkmsCredentialResourceSchema(ctx context.Context) schema.Schema {
 			Description:         "Creation time of the credential",
 			MarkdownDescription: "Creation time of the credential",
 		},
-		/*
-			"credential_id": schema.StringAttribute{
-				CustomType:          ovhtypes.TfStringType{},
-				Computed:            true,
-				Description:         "ID of the credential",
-				MarkdownDescription: "ID of the credential",
-			},
-		*/
 		"csr": schema.StringAttribute{
 			CustomType:          ovhtypes.TfStringType{},
 			Optional:            true,
@@ -106,7 +98,79 @@ func OkmsCredentialResourceSchema(ctx context.Context) schema.Schema {
 	}
 }
 
-type OkmsCredentialWritableModel struct {
+type OkmsCredentialResourceModel struct {
+	CertificatePem ovhtypes.TfStringValue                             `tfsdk:"certificate_pem" json:"certificatePem"`
+	CreatedAt      ovhtypes.TfStringValue                             `tfsdk:"created_at" json:"createdAt"`
+	Csr            ovhtypes.TfStringValue                             `tfsdk:"csr" json:"csr"`
+	Description    ovhtypes.TfStringValue                             `tfsdk:"description" json:"description"`
+	ExpiredAt      ovhtypes.TfStringValue                             `tfsdk:"expired_at" json:"expiredAt"`
+	FromCsr        ovhtypes.TfBoolValue                               `tfsdk:"from_csr" json:"fromCsr"`
+	Id             ovhtypes.TfStringValue                             `tfsdk:"id" json:"id"`
+	IdentityUrns   ovhtypes.TfListNestedValue[ovhtypes.TfStringValue] `tfsdk:"identity_urns" json:"identityURNs"`
+	Name           ovhtypes.TfStringValue                             `tfsdk:"name" json:"name"`
+	OkmsId         ovhtypes.TfStringValue                             `tfsdk:"okms_id" json:"okmsId"`
+	PrivateKeyPem  ovhtypes.TfStringValue                             `tfsdk:"private_key_pem" json:"privateKeyPem"`
+	Status         ovhtypes.TfStringValue                             `tfsdk:"status" json:"status"`
+	Validity       ovhtypes.TfInt64Value                              `tfsdk:"validity" json:"validity"`
+}
+
+func (o *OkmsCredentialResourceModel) MergeWith(other *OkmsCredentialResourceModel) {
+
+	if (o.CertificatePem.IsUnknown() || o.CertificatePem.IsNull()) && !other.CertificatePem.IsUnknown() {
+		o.CertificatePem = other.CertificatePem
+	}
+
+	if (o.CreatedAt.IsUnknown() || o.CreatedAt.IsNull()) && !other.CreatedAt.IsUnknown() {
+		o.CreatedAt = other.CreatedAt
+	}
+
+	if (o.Csr.IsUnknown() || o.Csr.IsNull()) && !other.Csr.IsUnknown() {
+		o.Csr = other.Csr
+	}
+
+	if (o.Description.IsUnknown() || o.Description.IsNull()) && !other.Description.IsUnknown() {
+		o.Description = other.Description
+	}
+
+	if (o.ExpiredAt.IsUnknown() || o.ExpiredAt.IsNull()) && !other.ExpiredAt.IsUnknown() {
+		o.ExpiredAt = other.ExpiredAt
+	}
+
+	if (o.FromCsr.IsUnknown() || o.FromCsr.IsNull()) && !other.FromCsr.IsUnknown() {
+		o.FromCsr = other.FromCsr
+	}
+
+	if (o.Id.IsUnknown() || o.Id.IsNull()) && !other.Id.IsUnknown() {
+		o.Id = other.Id
+	}
+
+	if (o.IdentityUrns.IsUnknown() || o.IdentityUrns.IsNull()) && !other.IdentityUrns.IsUnknown() {
+		o.IdentityUrns = other.IdentityUrns
+	}
+
+	if (o.Name.IsUnknown() || o.Name.IsNull()) && !other.Name.IsUnknown() {
+		o.Name = other.Name
+	}
+
+	if (o.OkmsId.IsUnknown() || o.OkmsId.IsNull()) && !other.OkmsId.IsUnknown() {
+		o.OkmsId = other.OkmsId
+	}
+
+	if (o.PrivateKeyPem.IsUnknown() || o.PrivateKeyPem.IsNull()) && !other.PrivateKeyPem.IsUnknown() {
+		o.PrivateKeyPem = other.PrivateKeyPem
+	}
+
+	if (o.Status.IsUnknown() || o.Status.IsNull()) && !other.Status.IsUnknown() {
+		o.Status = other.Status
+	}
+
+	if (o.Validity.IsUnknown() || o.Validity.IsNull()) && !other.Validity.IsUnknown() {
+		o.Validity = other.Validity
+	}
+
+}
+
+type OkmsCredentialWritableResourceModel struct {
 	Csr          *ovhtypes.TfStringValue                             `tfsdk:"csr" json:"csr,omitempty"`
 	Description  *ovhtypes.TfStringValue                             `tfsdk:"description" json:"description,omitempty"`
 	IdentityUrns *ovhtypes.TfListNestedValue[ovhtypes.TfStringValue] `tfsdk:"identity_urns" json:"identityURNs,omitempty"`
@@ -114,8 +178,8 @@ type OkmsCredentialWritableModel struct {
 	Validity     *ovhtypes.TfInt64Value                              `tfsdk:"validity" json:"validity,omitempty"`
 }
 
-func (v OkmsCredentialModel) ToCreate() *OkmsCredentialWritableModel {
-	res := &OkmsCredentialWritableModel{}
+func (v OkmsCredentialResourceModel) ToCreate() *OkmsCredentialWritableResourceModel {
+	res := &OkmsCredentialWritableResourceModel{}
 
 	if !v.Csr.IsUnknown() {
 		res.Csr = &v.Csr
@@ -140,8 +204,8 @@ func (v OkmsCredentialModel) ToCreate() *OkmsCredentialWritableModel {
 	return res
 }
 
-func (v OkmsCredentialModel) ToUpdate() *OkmsCredentialWritableModel {
-	res := &OkmsCredentialWritableModel{}
+func (v OkmsCredentialResourceModel) ToUpdate() *OkmsCredentialWritableResourceModel {
+	res := &OkmsCredentialWritableResourceModel{}
 
 	if !v.Csr.IsUnknown() {
 		res.Csr = &v.Csr
