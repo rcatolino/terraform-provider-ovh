@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	ovhtypes "github.com/ovh/terraform-provider-ovh/ovh/types"
 )
 
 var _ resource.ResourceWithConfigure = (*okmsServiceKeyResource)(nil)
@@ -143,9 +144,19 @@ func (r *okmsServiceKeyResource) Delete(ctx context.Context, req resource.Delete
 		return
 	}
 
-	// TODO: Do we have to deactivate it first ?
-	// Delete API call logic
+	data.State = ovhtypes.NewTfStringValue("DEACTIVATED")
+	data.DeactivationReason = ovhtypes.NewTfStringValue("UNSPECIFIED")
+	// Deactivate key first
 	endpoint := "/v2/okms/resource/" + url.PathEscape(data.OkmsId.ValueString()) + "/serviceKey/" + url.PathEscape(data.Id.ValueString())
+	if err := r.config.OVHClient.Put(endpoint, data.ToUpdate(), nil); err != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Error deactivating key %s", endpoint),
+			err.Error(),
+		)
+		return
+	}
+
+	// Delete API call logic
 	if err := r.config.OVHClient.Delete(endpoint, nil); err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Error calling Delete %s", endpoint),

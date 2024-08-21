@@ -24,7 +24,7 @@ func OkmsServiceKeyResourceSchema(ctx context.Context) schema.Schema {
 			Description:         "Context of the key",
 			MarkdownDescription: "Context of the key",
 			PlanModifiers: []planmodifier.String{
-				stringplanmodifier.RequiresReplace(),
+				stringplanmodifier.RequiresReplaceIfConfigured(),
 			},
 		},
 		"created_at": schema.StringAttribute{
@@ -40,7 +40,7 @@ func OkmsServiceKeyResourceSchema(ctx context.Context) schema.Schema {
 			Description:         "Curve type for Elliptic Curve (EC) keys",
 			MarkdownDescription: "Curve type for Elliptic Curve (EC) keys",
 			PlanModifiers: []planmodifier.String{
-				stringplanmodifier.RequiresReplace(),
+				stringplanmodifier.RequiresReplaceIfConfigured(),
 			},
 			Validators: []validator.String{
 				stringvalidator.OneOf(
@@ -281,7 +281,7 @@ func OkmsServiceKeyResourceSchema(ctx context.Context) schema.Schema {
 			Description:         "Size of the key to be created",
 			MarkdownDescription: "Size of the key to be created",
 			PlanModifiers: []planmodifier.Int64{
-				int64planmodifier.RequiresReplace(),
+				int64planmodifier.RequiresReplaceIfConfigured(),
 			},
 			Validators: []validator.Int64{
 				int64validator.OneOf(
@@ -445,14 +445,6 @@ func (v OkmsServiceKeyResourceModel) ToUpdate() *OkmsServiceKeyWritableModel {
 
 	if !v.State.IsUnknown() {
 		res.State = &v.State
-	}
-
-	if res.State.ValueString() == "DEACTIVATED" && res.DeactivationReason.IsUnknown() {
-		reason := ovhtypes.NewTfStringValue("UNSPECIFIED")
-		res.DeactivationReason = &reason
-	} else if res.State.ValueString() == "COMPROMISED" && res.DeactivationReason.IsUnknown() {
-		reason := ovhtypes.NewTfStringValue("KEY_COMPROMISE")
-		res.DeactivationReason = &reason
 	}
 
 	return res
