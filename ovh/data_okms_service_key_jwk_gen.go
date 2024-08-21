@@ -31,6 +31,7 @@ func OkmsServiceKeyJwkDataSourceSchema(ctx context.Context) schema.Schema {
 			Description:         "Key ID",
 			MarkdownDescription: "Key ID",
 		},
+		// TODO: remove key_id
 		"key_id": schema.StringAttribute{
 			CustomType:          ovhtypes.TfStringType{},
 			Required:            true,

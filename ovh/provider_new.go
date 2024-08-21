@@ -225,6 +225,7 @@ func (p *OvhProvider) Resources(_ context.Context) []func() resource.Resource {
 		NewOkmsResource,
 		NewOkmsCredentialResource,
 		NewOkmsServiceKeyResource,
+		NewOkmsServiceJwkResource,
 		NewVpsResource,
 	}
 }
