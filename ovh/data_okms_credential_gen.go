@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 )
 
-func OkmsCredentialAttributes(ctx context.Context) map[string]schema.Attribute {
+func okmsCredentialAttributes(ctx context.Context) map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"certificate_pem": schema.StringAttribute{
 			CustomType:          ovhtypes.TfStringType{},
@@ -41,12 +41,6 @@ func OkmsCredentialAttributes(ctx context.Context) map[string]schema.Attribute {
 			Description:         "Is the credential generated from CSR",
 			MarkdownDescription: "Is the credential generated from CSR",
 		},
-		"id": schema.StringAttribute{
-			CustomType:          ovhtypes.TfStringType{},
-			Computed:            true,
-			Description:         "ID of the credential",
-			MarkdownDescription: "ID of the credential",
-		},
 		"identity_urns": schema.ListAttribute{
 			CustomType:          ovhtypes.NewTfListNestedType[ovhtypes.TfStringValue](ctx),
 			Computed:            true,
@@ -69,7 +63,7 @@ func OkmsCredentialAttributes(ctx context.Context) map[string]schema.Attribute {
 }
 
 func OkmsCredentialDataSourceSchema(ctx context.Context) schema.Schema {
-	credAttrs := OkmsCredentialAttributes(ctx)
+	credAttrs := okmsCredentialAttributes(ctx)
 	credAttrs["id"] = schema.StringAttribute{
 		CustomType:          ovhtypes.TfStringType{},
 		Required:            true,

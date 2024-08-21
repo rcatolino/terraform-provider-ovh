@@ -2,10 +2,40 @@ package ovh
 
 import (
 	"context"
+
 	ovhtypes "github.com/ovh/terraform-provider-ovh/ovh/types"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
+
+func handleCsrReplace(ctx context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
+	var data, planData OkmsCredentialResourceModel
+
+	resp.RequiresReplace = true
+	// Read Terraform plan data into the model
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &planData)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if data.FromCsr.ValueBool() && (data.Csr.IsNull() || data.Csr.IsUnknown()) && planData.Csr != data.Csr {
+		// This credential was created from a CSR but it's gone from the state.
+		// This can happen if we remove and then reimport this ressource,
+		// because the API doesn't return the original CSR.
+		// In that case let's just update the state with the CSR present in the config,
+		// there's no update to do on the server side.
+		resp.RequiresReplace = false
+	}
+}
 
 func OkmsCredentialResourceSchema(ctx context.Context) schema.Schema {
 	attrs := map[string]schema.Attribute{
@@ -27,6 +57,13 @@ func OkmsCredentialResourceSchema(ctx context.Context) schema.Schema {
 			Computed:            true,
 			Description:         "Valid Certificate Signing Request",
 			MarkdownDescription: "Valid Certificate Signing Request",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplaceIf(
+					handleCsrReplace,
+					"description",
+					"markdown description",
+				),
+			},
 		},
 		"description": schema.StringAttribute{
 			CustomType:          ovhtypes.TfStringType{},
@@ -34,6 +71,9 @@ func OkmsCredentialResourceSchema(ctx context.Context) schema.Schema {
 			Computed:            true,
 			Description:         "Description of the credential (max 200)",
 			MarkdownDescription: "Description of the credential (max 200)",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
 		},
 		"expired_at": schema.StringAttribute{
 			CustomType:          ovhtypes.TfStringType{},
@@ -64,12 +104,18 @@ func OkmsCredentialResourceSchema(ctx context.Context) schema.Schema {
 			Required:            true,
 			Description:         "Name of the credential (max 50)",
 			MarkdownDescription: "Name of the credential (max 50)",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
 		},
 		"okms_id": schema.StringAttribute{
 			CustomType:          ovhtypes.TfStringType{},
 			Required:            true,
 			Description:         "Okms ID",
 			MarkdownDescription: "Okms ID",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
 		},
 		"private_key_pem": schema.StringAttribute{
 			CustomType:          ovhtypes.TfStringType{},
@@ -90,6 +136,9 @@ func OkmsCredentialResourceSchema(ctx context.Context) schema.Schema {
 			Computed:            true,
 			Description:         "Validity in days (default 365, max 365)",
 			MarkdownDescription: "Validity in days (default 365, max 365)",
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.RequiresReplaceIfConfigured(),
+			},
 		},
 	}
 

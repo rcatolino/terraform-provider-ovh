@@ -131,6 +131,7 @@ func (r *okmsCredentialResource) Create(ctx context.Context, req resource.Create
 	}
 
 	responseData.MergeWith(&updateData)
+	responseData.Status = updateData.Status
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &responseData)...)
@@ -176,12 +177,8 @@ func (r *okmsCredentialResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 
-	if planData.Csr != data.Csr {
-		// If we remove/reimport a credential, the state Csr field will be empty,
-		// we can just update it from the config
-		data.Csr = planData.Csr
-	}
-
+	// We should only get an update request if the CSR can be replaced without recreation
+	data.Csr = planData.Csr
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
