@@ -3,6 +3,7 @@ package ovh
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/compare"
@@ -15,6 +16,7 @@ import (
 )
 
 func kmsResourceStateChecks(displayName string) []statecheck.StateCheck {
+	urnRe := regexp.MustCompile("urn:v1:eu:resource:okms:.*")
 	return []statecheck.StateCheck{
 		statecheck.ExpectKnownValue(
 			"ovh_okms.kms",
@@ -24,6 +26,10 @@ func kmsResourceStateChecks(displayName string) []statecheck.StateCheck {
 			"ovh_okms.kms",
 			tfjsonpath.New("iam").AtMapKey("display_name"),
 			knownvalue.StringExact(displayName)),
+		statecheck.ExpectKnownValue(
+			"ovh_okms.kms",
+			tfjsonpath.New("iam").AtMapKey("urn"),
+			knownvalue.StringRegexp(urnRe)),
 		statecheck.ExpectKnownValue(
 			"ovh_okms.kms",
 			tfjsonpath.New("kmip_endpoint"),
