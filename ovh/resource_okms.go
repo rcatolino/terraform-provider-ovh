@@ -100,6 +100,9 @@ func (r *okmsResource) Create(ctx context.Context, req resource.CreateRequest, r
 	*/
 	order, diags := data.ToCreate(ctx)
 	resp.Diagnostics.Append(diags...)
+	if order == nil {
+		return
+	}
 
 	if err := orderCreate(order, r.config, "okms"); err != nil {
 		resp.Diagnostics.AddError("failed to create order", err.Error())

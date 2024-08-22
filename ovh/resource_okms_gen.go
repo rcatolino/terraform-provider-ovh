@@ -105,6 +105,7 @@ func OkmsResourceSchema(ctx context.Context) schema.Schema {
 			Description:         "KMS region",
 			MarkdownDescription: "KMS region",
 			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
 				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
@@ -156,36 +157,36 @@ type OkmsModel struct {
 }
 
 func (v *OkmsModel) ToCreate(ctx context.Context) (*OrderModel, diag.Diagnostics) {
-	// Create order and wait for service to be delivered
-
-	conf_attrs := map[string]attr.Value{}
-	conf_attrs["label"] = ovhtypes.NewTfStringValue("region")
-	conf_attrs["value"] = v.Region
+	// Create order configuration
 	configuration, diags := NewPlanConfigurationValue(
 		PlanConfigurationValue{}.AttributeTypes(ctx),
-		conf_attrs,
+		map[string]attr.Value{
+			"label": ovhtypes.NewTfStringValue("region"),
+			"value": v.Region,
+		},
 	)
 
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	attributes := map[string]attr.Value{}
-	attributes["item_id"] = ovhtypes.TfInt64Value{Int64Value: basetypes.NewInt64Unknown()}
-	attributes["quantity"] = ovhtypes.TfInt64Value{Int64Value: basetypes.NewInt64Value(1)}
-	attributes["duration"] = ovhtypes.NewTfStringValue("P1M")
-	attributes["plan_code"] = ovhtypes.NewTfStringValue("okms")
-	attributes["pricing_mode"] = ovhtypes.NewTfStringValue("default")
-	attributes["configuration"] = ovhtypes.TfListNestedValue[PlanConfigurationValue]{
-		ListValue: basetypes.NewListValueMust(
-			configuration.Type(context.Background()),
-			[]attr.Value{
-				configuration,
+	plan, diags := NewPlanValue(
+		PlanValue{}.AttributeTypes(ctx),
+		map[string]attr.Value{
+			"item_id":      ovhtypes.TfInt64Value{Int64Value: basetypes.NewInt64Unknown()},
+			"quantity":     ovhtypes.TfInt64Value{Int64Value: basetypes.NewInt64Value(1)},
+			"duration":     ovhtypes.NewTfStringValue("P1M"),
+			"plan_code":    ovhtypes.NewTfStringValue("okms"),
+			"pricing_mode": ovhtypes.NewTfStringValue("default"),
+			"configuration": ovhtypes.TfListNestedValue[PlanConfigurationValue]{
+				ListValue: basetypes.NewListValueMust(
+					configuration.Type(context.Background()),
+					[]attr.Value{configuration},
+				),
 			},
-		),
-	}
+		},
+	)
 
-	plan, diags := NewPlanValue(PlanValue{}.AttributeTypes(ctx), attributes)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -196,28 +197,10 @@ func (v *OkmsModel) ToCreate(ctx context.Context) (*OrderModel, diag.Diagnostics
 		Plan: ovhtypes.TfListNestedValue[PlanValue]{
 			ListValue: basetypes.NewListValueMust(
 				plan.Type(context.Background()),
-				[]attr.Value{
-					plan,
-				},
+				[]attr.Value{plan},
 			),
 		},
-		// Plan:          ovhtypes.NewTfListNestedType[PlanValue](ctx, plan),
-		// PlanOption:    ovhtypes.TfListNestedValue[PlanOptionValue]{},
 	}
-
-	/*
-		planConf := `
-		[
-			{
-				"duration": "P1M",
-				"plan_code": "okms",
-				"pricing_mode": "default",
-				"configuration": [{label="region", value="%s"}]
-			}
-		]
-		`
-		order.Plan.UnmarshalJSON([]byte(fmt.Sprintf(planConf, v.Region.ValueString())))
-	*/
 
 	return order, diags
 }
