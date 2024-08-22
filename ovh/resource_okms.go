@@ -144,7 +144,7 @@ func (r *okmsResource) Create(ctx context.Context, req resource.CreateRequest, r
 		StringValue: basetypes.NewStringValue(id),
 	}
 
-	err = r.waitKmsUpdate(ctx, id, 1*time.Minute, func(responseData *OkmsModel) bool {
+	err = r.waitKmsUpdate(ctx, id, 2*time.Minute, func(responseData *OkmsModel) bool {
 		// KMS id was updated successfully
 		if responseData.Id.ValueString() == id {
 			data.MergeWith(responseData)
