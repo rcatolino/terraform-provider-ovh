@@ -90,12 +90,16 @@ func (r *okmsResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	// Create order and wait for service to be delivered
-	order := &OrderModel{
-		Order:         data.Order,
-		OvhSubsidiary: data.OvhSubsidiary,
-		Plan:          data.Plan,
-		PlanOption:    data.PlanOption,
-	}
+	/*
+		order := &OrderModel{
+			Order:         data.Order,
+			OvhSubsidiary: data.OvhSubsidiary,
+			Plan:          data.Plan,
+			PlanOption:    data.PlanOption,
+		}
+	*/
+	order, diags := data.ToCreate(ctx)
+	resp.Diagnostics.Append(diags...)
 
 	if err := orderCreate(order, r.config, "okms"); err != nil {
 		resp.Diagnostics.AddError("failed to create order", err.Error())
@@ -103,7 +107,7 @@ func (r *okmsResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	orderID := order.Order.OrderId.ValueInt64()
 	plans := []PlanValue{}
-	resp.Diagnostics.Append(data.Plan.ElementsAs(ctx, &plans, false)...)
+	resp.Diagnostics.Append(order.Plan.ElementsAs(ctx, &plans, false)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -213,6 +217,12 @@ func (r *okmsResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
+	if !planData.OvhSubsidiary.IsUnknown() && (data.OvhSubsidiary.IsUnknown() || data.OvhSubsidiary.IsNull()) {
+		// This can happen after an import as the API doesn't return this info
+		// This isn't useful once the order is done, so just use what is set in the conf
+		data.OvhSubsidiary = planData.OvhSubsidiary
+	}
+
 	if planData.DisplayName.ValueString() != data.DisplayName.ValueString() {
 		// Update service displayName
 		log.Printf("[OKMS] updating display name for %s to %s", data.Id.ValueString(), planData.DisplayName.ValueString())
@@ -225,9 +235,10 @@ func (r *okmsResource) Update(ctx context.Context, req resource.UpdateRequest, r
 			// Save data into Terraform state
 			data.DisplayName = planData.DisplayName
 			data.Iam.DisplayName = planData.DisplayName
-			resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 		}
 	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 func (r *okmsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {

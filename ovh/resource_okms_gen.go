@@ -2,10 +2,17 @@ package ovh
 
 import (
 	"context"
+	// "fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	ovhtypes "github.com/ovh/terraform-provider-ovh/ovh/types"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
 
 func OkmsResourceSchema(ctx context.Context) schema.Schema {
@@ -30,6 +37,9 @@ func OkmsResourceSchema(ctx context.Context) schema.Schema {
 					Computed:            true,
 					Description:         "Unique identifier of the resource",
 					MarkdownDescription: "Unique identifier of the resource",
+					PlanModifiers: []planmodifier.String{
+						stringplanmodifier.UseStateForUnknown(),
+					},
 				},
 				"tags": schema.MapAttribute{
 					CustomType:          ovhtypes.NewTfMapNestedType[ovhtypes.TfStringValue](ctx),
@@ -42,6 +52,9 @@ func OkmsResourceSchema(ctx context.Context) schema.Schema {
 					Computed:            true,
 					Description:         "Unique resource name used in policies",
 					MarkdownDescription: "Unique resource name used in policies",
+					PlanModifiers: []planmodifier.String{
+						stringplanmodifier.UseStateForUnknown(),
+					},
 				},
 			},
 			CustomType: IamType{
@@ -58,12 +71,27 @@ func OkmsResourceSchema(ctx context.Context) schema.Schema {
 			Computed:            true,
 			Description:         "OKMS ID",
 			MarkdownDescription: "OKMS ID",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
 		},
 		"kmip_endpoint": schema.StringAttribute{
 			CustomType:          ovhtypes.TfStringType{},
 			Computed:            true,
 			Description:         "KMS kmip API endpoint",
 			MarkdownDescription: "KMS kmip API endpoint",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
+		},
+		"ovh_subsidiary": schema.StringAttribute{
+			CustomType:          ovhtypes.TfStringType{},
+			Required:            true,
+			Description:         "OVH subsidiaries",
+			MarkdownDescription: "OVH subsidiaries",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
 		},
 		"public_ca": schema.StringAttribute{
 			CustomType:          ovhtypes.TfStringType{},
@@ -71,25 +99,41 @@ func OkmsResourceSchema(ctx context.Context) schema.Schema {
 			Description:         "KMS public CA (Certificate Authority)",
 			MarkdownDescription: "KMS public CA (Certificate Authority)",
 		},
-		// TODO: add region as a required first level parameter instead of a plan option
+		"region": schema.StringAttribute{
+			CustomType:          ovhtypes.TfStringType{},
+			Required:            true,
+			Description:         "KMS region",
+			MarkdownDescription: "KMS region",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
+		},
 		"rest_endpoint": schema.StringAttribute{
 			CustomType:          ovhtypes.TfStringType{},
 			Computed:            true,
 			Description:         "KMS rest API endpoint",
 			MarkdownDescription: "KMS rest API endpoint",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
 		},
 		"swagger_endpoint": schema.StringAttribute{
 			CustomType:          ovhtypes.TfStringType{},
 			Computed:            true,
 			Description:         "KMS rest API swagger UI",
 			MarkdownDescription: "KMS rest API swagger UI",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
 		},
 	}
 
 	// Add order attributes
-	for k, v := range OrderResourceSchema(ctx).Attributes {
-		attrs[k] = v
-	}
+	/*
+		for k, v := range OrderResourceSchema(ctx).Attributes {
+			attrs[k] = v
+		}
+	*/
 
 	return schema.Schema{
 		Attributes: attrs,
@@ -97,17 +141,85 @@ func OkmsResourceSchema(ctx context.Context) schema.Schema {
 }
 
 type OkmsModel struct {
-	DisplayName     ovhtypes.TfStringValue                      `tfsdk:"display_name" json:"displayName"`
-	Iam             IamValue                                    `tfsdk:"iam" json:"iam"`
-	Id              ovhtypes.TfStringValue                      `tfsdk:"id" json:"id"`
-	KmipEndpoint    ovhtypes.TfStringValue                      `tfsdk:"kmip_endpoint" json:"kmipEndpoint"`
-	PublicCa        ovhtypes.TfStringValue                      `tfsdk:"public_ca" json:"publicCa"`
-	RestEndpoint    ovhtypes.TfStringValue                      `tfsdk:"rest_endpoint" json:"restEndpoint"`
-	SwaggerEndpoint ovhtypes.TfStringValue                      `tfsdk:"swagger_endpoint" json:"swaggerEndpoint"`
-	Order           OrderValue                                  `tfsdk:"order" json:"order"`
-	OvhSubsidiary   ovhtypes.TfStringValue                      `tfsdk:"ovh_subsidiary" json:"ovhSubsidiary"`
-	Plan            ovhtypes.TfListNestedValue[PlanValue]       `tfsdk:"plan" json:"plan"`
-	PlanOption      ovhtypes.TfListNestedValue[PlanOptionValue] `tfsdk:"plan_option" json:"planOption"`
+	DisplayName     ovhtypes.TfStringValue `tfsdk:"display_name" json:"displayName"`
+	Iam             IamValue               `tfsdk:"iam" json:"iam"`
+	Id              ovhtypes.TfStringValue `tfsdk:"id" json:"id"`
+	KmipEndpoint    ovhtypes.TfStringValue `tfsdk:"kmip_endpoint" json:"kmipEndpoint"`
+	PublicCa        ovhtypes.TfStringValue `tfsdk:"public_ca" json:"publicCa"`
+	RestEndpoint    ovhtypes.TfStringValue `tfsdk:"rest_endpoint" json:"restEndpoint"`
+	SwaggerEndpoint ovhtypes.TfStringValue `tfsdk:"swagger_endpoint" json:"swaggerEndpoint"`
+	// Order           OrderValue                                  `tfsdk:"order" json:"order"`
+	OvhSubsidiary ovhtypes.TfStringValue `tfsdk:"ovh_subsidiary" json:"ovhSubsidiary"`
+	Region        ovhtypes.TfStringValue `tfsdk:"region" json:"region"`
+	// Plan            ovhtypes.TfListNestedValue[PlanValue]       `tfsdk:"plan" json:"plan"`
+	// PlanOption      ovhtypes.TfListNestedValue[PlanOptionValue] `tfsdk:"plan_option" json:"planOption"`
+}
+
+func (v *OkmsModel) ToCreate(ctx context.Context) (*OrderModel, diag.Diagnostics) {
+	// Create order and wait for service to be delivered
+
+	conf_attrs := map[string]attr.Value{}
+	conf_attrs["label"] = ovhtypes.NewTfStringValue("region")
+	conf_attrs["value"] = v.Region
+	configuration, diags := NewPlanConfigurationValue(
+		PlanConfigurationValue{}.AttributeTypes(ctx),
+		conf_attrs,
+	)
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	attributes := map[string]attr.Value{}
+	attributes["item_id"] = ovhtypes.TfInt64Value{Int64Value: basetypes.NewInt64Unknown()}
+	attributes["quantity"] = ovhtypes.TfInt64Value{Int64Value: basetypes.NewInt64Value(1)}
+	attributes["duration"] = ovhtypes.NewTfStringValue("P1M")
+	attributes["plan_code"] = ovhtypes.NewTfStringValue("okms")
+	attributes["pricing_mode"] = ovhtypes.NewTfStringValue("default")
+	attributes["configuration"] = ovhtypes.TfListNestedValue[PlanConfigurationValue]{
+		ListValue: basetypes.NewListValueMust(
+			configuration.Type(context.Background()),
+			[]attr.Value{
+				configuration,
+			},
+		),
+	}
+
+	plan, diags := NewPlanValue(PlanValue{}.AttributeTypes(ctx), attributes)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	order := &OrderModel{
+		Order:         OrderValue{},
+		OvhSubsidiary: v.OvhSubsidiary,
+		Plan: ovhtypes.TfListNestedValue[PlanValue]{
+			ListValue: basetypes.NewListValueMust(
+				plan.Type(context.Background()),
+				[]attr.Value{
+					plan,
+				},
+			),
+		},
+		// Plan:          ovhtypes.NewTfListNestedType[PlanValue](ctx, plan),
+		// PlanOption:    ovhtypes.TfListNestedValue[PlanOptionValue]{},
+	}
+
+	/*
+		planConf := `
+		[
+			{
+				"duration": "P1M",
+				"plan_code": "okms",
+				"pricing_mode": "default",
+				"configuration": [{label="region", value="%s"}]
+			}
+		]
+		`
+		order.Plan.UnmarshalJSON([]byte(fmt.Sprintf(planConf, v.Region.ValueString())))
+	*/
+
+	return order, diags
 }
 
 func (v *OkmsModel) MergeWith(other *OkmsModel) {
@@ -140,22 +252,26 @@ func (v *OkmsModel) MergeWith(other *OkmsModel) {
 		v.SwaggerEndpoint = other.SwaggerEndpoint
 	}
 
-	if v.Order.IsUnknown() && !other.Order.IsUnknown() {
-		v.Order = other.Order
-	} else if !other.Order.IsUnknown() {
-		v.Order.MergeWith(&other.Order)
-	}
+	/*
+		if v.Order.IsUnknown() && !other.Order.IsUnknown() {
+			v.Order = other.Order
+		} else if !other.Order.IsUnknown() {
+			v.Order.MergeWith(&other.Order)
+		}
+	*/
 
 	if (v.OvhSubsidiary.IsUnknown() || v.OvhSubsidiary.IsNull()) && !other.OvhSubsidiary.IsUnknown() {
 		v.OvhSubsidiary = other.OvhSubsidiary
 	}
 
-	if (v.Plan.IsUnknown() || v.Plan.IsNull()) && !other.Plan.IsUnknown() {
-		v.Plan = other.Plan
-	}
+	/*
+		if (v.Plan.IsUnknown() || v.Plan.IsNull()) && !other.Plan.IsUnknown() {
+			v.Plan = other.Plan
+		}
 
-	if (v.PlanOption.IsUnknown() || v.PlanOption.IsNull()) && !other.PlanOption.IsUnknown() {
-		v.PlanOption = other.PlanOption
-	}
+		if (v.PlanOption.IsUnknown() || v.PlanOption.IsNull()) && !other.PlanOption.IsUnknown() {
+			v.PlanOption = other.PlanOption
+		}
+	*/
 
 }

@@ -372,6 +372,16 @@ func testAccPreCheckVPS(t *testing.T) {
 	checkEnvOrSkip(t, "OVH_VPS")
 }
 
+func testAccPreCheckOrderOkms(t *testing.T) {
+	testAccPreCheckCredentials(t)
+	checkEnvOrSkip(t, "OVH_TESTACC_ORDER_OKMS")
+}
+
+func testAccPreCheckOkms(t *testing.T) {
+	testAccPreCheckCredentials(t)
+	checkEnvOrSkip(t, "OVH_OKMS")
+}
+
 func testAccCheckVRackExists(t *testing.T) {
 	type vrackResponse struct {
 		Name        string `json:"name"`

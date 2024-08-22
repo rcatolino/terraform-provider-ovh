@@ -92,6 +92,9 @@ func OkmsCredentialResourceSchema(ctx context.Context) schema.Schema {
 			Computed:            true,
 			Description:         "ID of the credential",
 			MarkdownDescription: "ID of the credential",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
 		},
 		"identity_urns": schema.ListAttribute{
 			CustomType:          ovhtypes.NewTfListNestedType[ovhtypes.TfStringValue](ctx),

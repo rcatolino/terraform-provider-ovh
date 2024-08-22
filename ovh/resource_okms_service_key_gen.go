@@ -25,6 +25,7 @@ func OkmsServiceKeyResourceSchema(ctx context.Context) schema.Schema {
 			MarkdownDescription: "Context of the key",
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplaceIfConfigured(),
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
 		"created_at": schema.StringAttribute{
@@ -32,6 +33,9 @@ func OkmsServiceKeyResourceSchema(ctx context.Context) schema.Schema {
 			Computed:            true,
 			Description:         "Creation time of the key",
 			MarkdownDescription: "Creation time of the key",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
 		},
 		"curve": schema.StringAttribute{
 			CustomType:          ovhtypes.TfStringType{},
@@ -41,6 +45,7 @@ func OkmsServiceKeyResourceSchema(ctx context.Context) schema.Schema {
 			MarkdownDescription: "Curve type for Elliptic Curve (EC) keys",
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplaceIfConfigured(),
+				stringplanmodifier.UseStateForUnknown(),
 			},
 			Validators: []validator.String{
 				stringvalidator.OneOf(
@@ -72,184 +77,10 @@ func OkmsServiceKeyResourceSchema(ctx context.Context) schema.Schema {
 			Computed:            true,
 			Description:         "Key ID",
 			MarkdownDescription: "Key ID",
-		},
-		/*
-			"keys": schema.ListNestedAttribute{
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"alg": schema.StringAttribute{
-							CustomType:          ovhtypes.TfStringType{},
-							Optional:            true,
-							Computed:            true,
-							Description:         "The algorithm intended to be used with the key",
-							MarkdownDescription: "The algorithm intended to be used with the key",
-							Validators: []validator.String{
-								stringvalidator.OneOf(
-									"ES256",
-									"ES384",
-									"ES512",
-									"PS256",
-									"PS384",
-									"PS512",
-									"RS256",
-									"RS384",
-									"RS512",
-								),
-							},
-						},
-						"crv": schema.StringAttribute{
-							CustomType:          ovhtypes.TfStringType{},
-							Optional:            true,
-							Computed:            true,
-							Description:         "The cryptographic curve used with the key",
-							MarkdownDescription: "The cryptographic curve used with the key",
-							Validators: []validator.String{
-								stringvalidator.OneOf(
-									"P-256",
-									"P-384",
-									"P-521",
-								),
-							},
-						},
-						"d": schema.StringAttribute{
-							CustomType:          ovhtypes.TfStringType{},
-							Optional:            true,
-							Computed:            true,
-							Sensitive:           true,
-							Description:         "The RSA or EC private exponent",
-							MarkdownDescription: "The RSA or EC private exponent",
-						},
-						"dp": schema.StringAttribute{
-							CustomType:          ovhtypes.TfStringType{},
-							Optional:            true,
-							Computed:            true,
-							Sensitive:           true,
-							Description:         "The RSA private key's first factor CRT exponent",
-							MarkdownDescription: "The RSA private key's first factor CRT exponent",
-						},
-						"dq": schema.StringAttribute{
-							CustomType:          ovhtypes.TfStringType{},
-							Optional:            true,
-							Computed:            true,
-							Sensitive:           true,
-							Description:         "The RSA private key's second factor CRT exponent",
-							MarkdownDescription: "The RSA private key's second factor CRT exponent",
-						},
-						"e": schema.StringAttribute{
-							CustomType:          ovhtypes.TfStringType{},
-							Optional:            true,
-							Computed:            true,
-							Description:         "The exponent value for the RSA public key",
-							MarkdownDescription: "The exponent value for the RSA public key",
-						},
-						"k": schema.StringAttribute{
-							CustomType:          ovhtypes.TfStringType{},
-							Optional:            true,
-							Computed:            true,
-							Sensitive:           true,
-							Description:         "The value of the symmetric (or other single-valued) key",
-							MarkdownDescription: "The value of the symmetric (or other single-valued) key",
-						},
-						"key_ops": schema.ListAttribute{
-							CustomType:          ovhtypes.NewTfListNestedType[ovhtypes.TfStringValue](ctx),
-							Optional:            true,
-							Computed:            true,
-							Description:         "The operation for which the key is intended to be used",
-							MarkdownDescription: "The operation for which the key is intended to be used",
-						},
-						"kid": schema.StringAttribute{
-							CustomType:          ovhtypes.TfStringType{},
-							Optional:            true,
-							Computed:            true,
-							Description:         "key ID parameter used to match a specific key",
-							MarkdownDescription: "key ID parameter used to match a specific key",
-						},
-						"kty": schema.StringAttribute{
-							CustomType:          ovhtypes.TfStringType{},
-							Optional:            true,
-							Computed:            true,
-							Description:         "Key type parameter identifies the cryptographic algorithm family used with the key, such as RSA or EC",
-							MarkdownDescription: "Key type parameter identifies the cryptographic algorithm family used with the key, such as RSA or EC",
-							Validators: []validator.String{
-								stringvalidator.OneOf(
-									"EC",
-									"RSA",
-									"oct",
-								),
-							},
-						},
-						"n": schema.StringAttribute{
-							CustomType:          ovhtypes.TfStringType{},
-							Optional:            true,
-							Computed:            true,
-							Description:         "The modulus value for the RSA public key",
-							MarkdownDescription: "The modulus value for the RSA public key",
-						},
-						"p": schema.StringAttribute{
-							CustomType:          ovhtypes.TfStringType{},
-							Optional:            true,
-							Computed:            true,
-							Sensitive:           true,
-							Description:         "The first prime factor of the RSA private key",
-							MarkdownDescription: "The first prime factor of the RSA private key",
-						},
-						"q": schema.StringAttribute{
-							CustomType:          ovhtypes.TfStringType{},
-							Optional:            true,
-							Computed:            true,
-							Sensitive:           true,
-							Description:         "The second prime factor of the RSA private key",
-							MarkdownDescription: "The second prime factor of the RSA private key",
-						},
-						"qi": schema.StringAttribute{
-							CustomType:          ovhtypes.TfStringType{},
-							Optional:            true,
-							Computed:            true,
-							Sensitive:           true,
-							Description:         "The CRT coefficient of the second factor of the RSA private key",
-							MarkdownDescription: "The CRT coefficient of the second factor of the RSA private key",
-						},
-						"use": schema.StringAttribute{
-							CustomType:          ovhtypes.TfStringType{},
-							Optional:            true,
-							Computed:            true,
-							Description:         "The intended use of the public key",
-							MarkdownDescription: "The intended use of the public key",
-							Validators: []validator.String{
-								stringvalidator.OneOf(
-									"enc",
-									"sig",
-								),
-							},
-						},
-						"x": schema.StringAttribute{
-							CustomType:          ovhtypes.TfStringType{},
-							Optional:            true,
-							Computed:            true,
-							Description:         "The x coordinate for the Elliptic Curve point",
-							MarkdownDescription: "The x coordinate for the Elliptic Curve point",
-						},
-						"y": schema.StringAttribute{
-							CustomType:          ovhtypes.TfStringType{},
-							Optional:            true,
-							Computed:            true,
-							Description:         "The y coordinate for the Elliptic Curve point",
-							MarkdownDescription: "The y coordinate for the Elliptic Curve point",
-						},
-					},
-					CustomType: KeysType{
-						ObjectType: types.ObjectType{
-							AttrTypes: KeysValue{}.AttributeTypes(ctx),
-						},
-					},
-				},
-				CustomType:          ovhtypes.NewTfListNestedType[KeysValue](ctx),
-				Optional:            true,
-				Computed:            true,
-				Description:         "Set of JSON Web Keys in case of import, incompatible with type,size,curve and operations",
-				MarkdownDescription: "Set of JSON Web Keys in case of import, incompatible with type,size,curve and operations",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
-		*/
+		},
 		"name": schema.StringAttribute{
 			CustomType:          ovhtypes.TfStringType{},
 			Required:            true,
@@ -263,6 +94,7 @@ func OkmsServiceKeyResourceSchema(ctx context.Context) schema.Schema {
 			MarkdownDescription: "Okms ID",
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
 		"operations": schema.ListAttribute{
@@ -272,6 +104,7 @@ func OkmsServiceKeyResourceSchema(ctx context.Context) schema.Schema {
 			MarkdownDescription: "The operations for which the key is intended to be used",
 			PlanModifiers: []planmodifier.List{
 				listplanmodifier.RequiresReplace(),
+				listplanmodifier.UseStateForUnknown(),
 			},
 		},
 		"size": schema.Int64Attribute{
@@ -282,6 +115,7 @@ func OkmsServiceKeyResourceSchema(ctx context.Context) schema.Schema {
 			MarkdownDescription: "Size of the key to be created",
 			PlanModifiers: []planmodifier.Int64{
 				int64planmodifier.RequiresReplaceIfConfigured(),
+				int64planmodifier.UseStateForUnknown(),
 			},
 			Validators: []validator.Int64{
 				int64validator.OneOf(
@@ -314,6 +148,7 @@ func OkmsServiceKeyResourceSchema(ctx context.Context) schema.Schema {
 			MarkdownDescription: "Type of the key to be created",
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
+				stringplanmodifier.UseStateForUnknown(),
 			},
 			Validators: []validator.String{
 				stringvalidator.OneOf(
