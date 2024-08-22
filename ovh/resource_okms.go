@@ -30,6 +30,25 @@ type okmsResource struct {
 	config *Config
 }
 
+func (r *okmsResource) waitKmsUpdate(ctx context.Context, kmsId string, timeout time.Duration, cb func(*OkmsModel) bool) error {
+	var responseData OkmsModel
+	// Read updated resource & update corresponding tf resource state
+	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		// Read updated resource
+		if err := r.getOkmsById(kmsId, &responseData); err != nil {
+			return retry.NonRetryableError(fmt.Errorf("error reading KMS %s", kmsId))
+		}
+
+		if cb(&responseData) {
+			return nil
+		}
+
+		return retry.RetryableError(errors.New("Waiting okms update"))
+	})
+
+	return err
+}
+
 func (r *okmsResource) getOkmsById(id string, data *OkmsModel) error {
 	endpoint := "/v2/okms/resource/" + url.PathEscape(id) + "?publicCA=true"
 	if err := r.config.OVHClient.Get(endpoint, &data); err != nil {
@@ -125,27 +144,19 @@ func (r *okmsResource) Create(ctx context.Context, req resource.CreateRequest, r
 		StringValue: basetypes.NewStringValue(id),
 	}
 
-	var responseData OkmsModel
-	// Read updated resource & update corresponding tf resource state
-	err = retry.RetryContext(ctx, 2*time.Minute, func() *retry.RetryError {
-		// Read updated resource
-		if err := r.getOkmsById(id, &responseData); err != nil {
-			return retry.NonRetryableError(fmt.Errorf("error reading KMS %s", id))
-		}
-
-		// KMS was created successfully, return
+	err = r.waitKmsUpdate(ctx, id, 1*time.Minute, func(responseData *OkmsModel) bool {
+		// KMS id was updated successfully
 		if responseData.Id.ValueString() == id {
-			return nil
+			data.MergeWith(responseData)
+			return true
 		}
-
-		return retry.RetryableError(errors.New("waiting for KMS creation timeout"))
+		return false
 	})
 
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create KMS, creation timeout", err.Error())
 	}
 
-	data.MergeWith(&responseData)
 	// Update service displayName
 	if r.updateServiceDisplayName(
 		data.Id.ValueString(),
@@ -154,6 +165,18 @@ func (r *okmsResource) Create(ctx context.Context, req resource.CreateRequest, r
 	) == nil {
 		// Update IAM display name as well
 		data.Iam.DisplayName = data.DisplayName
+	}
+
+	err = r.waitKmsUpdate(ctx, id, 1*time.Minute, func(responseData *OkmsModel) bool {
+		// KMS name was updated successfully
+		if responseData.DisplayName.ValueString() == data.DisplayName.ValueString() {
+			return true
+		}
+		return false
+	})
+
+	if err != nil {
+		resp.Diagnostics.AddError("Error getting updated KMS", err.Error())
 	}
 
 	// Save data into Terraform state
@@ -238,6 +261,18 @@ func (r *okmsResource) Update(ctx context.Context, req resource.UpdateRequest, r
 			// Save data into Terraform state
 			data.DisplayName = planData.DisplayName
 			data.Iam.DisplayName = planData.DisplayName
+			err := r.waitKmsUpdate(ctx, data.Id.ValueString(), 1*time.Minute, func(responseData *OkmsModel) bool {
+				// KMS name was updated successfully
+				if responseData.DisplayName.ValueString() == data.DisplayName.ValueString() {
+					return true
+				}
+				return false
+			})
+
+			if err != nil {
+				resp.Diagnostics.AddError("Error getting updated KMS", err.Error())
+			}
+
 		}
 	}
 

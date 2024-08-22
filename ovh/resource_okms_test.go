@@ -18,11 +18,11 @@ func kmsResourceStateChecks(displayName string) []statecheck.StateCheck {
 	return []statecheck.StateCheck{
 		statecheck.ExpectKnownValue(
 			"ovh_okms.kms",
-			tfjsonpath.New("iam.display_name"),
+			tfjsonpath.New("display_name"),
 			knownvalue.StringExact(displayName)),
 		statecheck.ExpectKnownValue(
 			"ovh_okms.kms",
-			tfjsonpath.New("display_name"),
+			tfjsonpath.New("iam").AtMapKey("display_name"),
 			knownvalue.StringExact(displayName)),
 		statecheck.ExpectKnownValue(
 			"ovh_okms.kms",
@@ -44,23 +44,24 @@ func kmsResourceStateChecks(displayName string) []statecheck.StateCheck {
 }
 
 const confOkmsResourceOrder = `
-resource "ovh_okms" "newkms" {
+resource "ovh_okms" "kms" {
   ovh_subsidiary = "FR"
   display_name = "%s"
-  region = "EU_WEST_SBG"
+  region = "%s"
 }
 `
 
 func TestAccResourceOkmsOrder(t *testing.T) {
-	compareValuesSame := compare.CompareValue(compare.ValuesSame())
+	compareValuesSame := statecheck.CompareValue(compare.ValuesSame())
 	displayName := acctest.RandomWithPrefix(test_prefix)
+	region := "EU_WEST_SBG"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheckOrderOkms(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(confOkmsResourceOrder, displayName),
+				Config: fmt.Sprintf(confOkmsResourceOrder, displayName, region),
 				ConfigStateChecks: append(
 					kmsResourceStateChecks(displayName),
 					statecheck.ExpectKnownValue(
@@ -73,7 +74,7 @@ func TestAccResourceOkmsOrder(t *testing.T) {
 				),
 			},
 			{
-				Config: fmt.Sprintf(confOkmsResourceOrder, displayName+"new"),
+				Config: fmt.Sprintf(confOkmsResourceOrder, displayName+"new", region),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectNonEmptyPlan(),
@@ -83,7 +84,7 @@ func TestAccResourceOkmsOrder(t *testing.T) {
 					},
 				},
 				ConfigStateChecks: append(
-					kmsResourceStateChecks(displayName),
+					kmsResourceStateChecks(displayName+"new"),
 					compareValuesSame.AddStateValue(
 						"ovh_okms.kms",
 						tfjsonpath.New("id")),
@@ -93,15 +94,7 @@ func TestAccResourceOkmsOrder(t *testing.T) {
 	})
 }
 
-const confOkmsResourceUpdate = `
-resource "ovh_okms" "kms" {
-	display_name = "%s"
-	ovh_subsidiary = "FR"
-	region = "EU_WEST_SBG"
-}
-`
-
-func TestAccResourceOkmsUpdate(t *testing.T) {
+func TestAccResourceOkmsImport(t *testing.T) {
 	displayName := acctest.RandomWithPrefix(test_prefix)
 	kmsId := os.Getenv("OVH_OKMS")
 
@@ -110,54 +103,11 @@ func TestAccResourceOkmsUpdate(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config:        fmt.Sprintf(confOkmsResourceUpdate, displayName),
 				ResourceName:  "ovh_okms.kms",
 				ImportState:   true,
 				ImportStateId: kmsId,
-				//ImportStatePersist: true,
+				Config:        fmt.Sprintf(confOkmsResourceOrder, displayName, "EU_WEST_SBG"),
 			},
-			{
-				Config: fmt.Sprintf(confOkmsResourceUpdate, displayName),
-				ConfigPlanChecks: resource.ConfigPlanChecks{
-					PreApply: []plancheck.PlanCheck{
-						plancheck.ExpectNonEmptyPlan(),
-						plancheck.ExpectKnownValue(
-							"ovh_okms.kms",
-							tfjsonpath.New("id"),
-							knownvalue.StringExact(kmsId)),
-						plancheck.ExpectResourceAction(
-							"ovh_okms.kms",
-							plancheck.ResourceActionUpdate),
-					},
-				},
-				ConfigStateChecks: append(
-					kmsResourceStateChecks(displayName),
-					statecheck.ExpectKnownValue(
-						"ovh_okms.kms",
-						tfjsonpath.New("id"),
-						knownvalue.StringExact(kmsId)),
-				),
-			},
-			/*
-				{
-					Config: fmt.Sprintf(confOkmsResourceUpdate, displayName+"2"),
-					ConfigPlanChecks: resource.ConfigPlanChecks{
-						PreApply: []plancheck.PlanCheck{
-							plancheck.ExpectKnownValue(
-								"ovh_okms.kms",
-								tfjsonpath.New("id"),
-								knownvalue.StringExact(kmsId)),
-						},
-					},
-					ConfigStateChecks: append(
-						kmsResourceStateChecks(displayName+"2"),
-						statecheck.ExpectKnownValue(
-							"ovh_okms.kms",
-							tfjsonpath.New("id"),
-							knownvalue.StringExact(kmsId)),
-					),
-				},
-			*/
 		},
 	})
 }
