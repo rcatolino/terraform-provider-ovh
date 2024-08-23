@@ -161,7 +161,7 @@ func TestAccOkmsCredCreate(t *testing.T) {
 	credName := acctest.RandomWithPrefix(test_prefix)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheckOrderOkms(t) },
+		PreCheck:                 func() { testAccPreCheckCredentials(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{

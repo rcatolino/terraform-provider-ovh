@@ -120,13 +120,13 @@ data "ovh_okms_resource" "datakms" {
 }
 `
 
-func TestAcceOkmsOrder(t *testing.T) {
+func TestAccOkmsOrder(t *testing.T) {
 	compareValuesSame := statecheck.CompareValue(compare.ValuesSame())
 	displayName := acctest.RandomWithPrefix(test_prefix)
 	region := "EU_WEST_SBG"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheckOrderOkms(t) },
+		PreCheck:                 func() { testAccPreCheckCredentials(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
