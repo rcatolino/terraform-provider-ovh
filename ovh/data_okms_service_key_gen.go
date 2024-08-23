@@ -24,7 +24,7 @@ func OkmsServiceKeyAttributes(ctx context.Context) map[string]schema.Attribute {
 		},
 		"id": schema.StringAttribute{
 			CustomType:          ovhtypes.TfStringType{},
-			Computed:            true,
+			Required:            true,
 			Description:         "Key ID",
 			MarkdownDescription: "Key ID",
 		},
@@ -64,12 +64,6 @@ func OkmsServiceKeyAttributes(ctx context.Context) map[string]schema.Attribute {
 
 func OkmsServiceKeyDataSourceSchema(ctx context.Context) schema.Schema {
 	attrs := OkmsServiceKeyAttributes(ctx)
-	attrs["key_id"] = schema.StringAttribute{
-		CustomType:          ovhtypes.TfStringType{},
-		Required:            true,
-		Description:         "Key ID",
-		MarkdownDescription: "Key ID",
-	}
 	attrs["okms_id"] = schema.StringAttribute{
 		CustomType:          ovhtypes.TfStringType{},
 		Required:            true,
@@ -85,7 +79,6 @@ type OkmsServiceKeyModel struct {
 	CreatedAt  ovhtypes.TfStringValue                             `tfsdk:"created_at" json:"createdAt"`
 	Curve      ovhtypes.TfStringValue                             `tfsdk:"curve" json:"curve"`
 	Id         ovhtypes.TfStringValue                             `tfsdk:"id" json:"id"`
-	KeyId      ovhtypes.TfStringValue                             `tfsdk:"key_id" json:"keyId"`
 	Name       ovhtypes.TfStringValue                             `tfsdk:"name" json:"name"`
 	OkmsId     ovhtypes.TfStringValue                             `tfsdk:"okms_id" json:"okmsId"`
 	Operations ovhtypes.TfListNestedValue[ovhtypes.TfStringValue] `tfsdk:"operations" json:"operations"`
@@ -106,10 +99,6 @@ func (v *OkmsServiceKeyModel) MergeWith(other *OkmsServiceKeyModel) {
 
 	if (v.Id.IsUnknown() || v.Id.IsNull()) && !other.Id.IsUnknown() {
 		v.Id = other.Id
-	}
-
-	if (v.KeyId.IsUnknown() || v.KeyId.IsNull()) && !other.KeyId.IsUnknown() {
-		v.KeyId = other.KeyId
 	}
 
 	if (v.Name.IsUnknown() || v.Name.IsNull()) && !other.Name.IsUnknown() {

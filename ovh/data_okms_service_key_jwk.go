@@ -54,7 +54,7 @@ func (d *okmsServiceKeyJwkDataSource) Read(ctx context.Context, req datasource.R
 	}
 
 	// Read API call logic
-	endpoint := "/v2/okms/resource/" + url.PathEscape(data.OkmsId.ValueString()) + "/serviceKey/" + url.PathEscape(data.KeyId.ValueString()) + "?format=JWK"
+	endpoint := "/v2/okms/resource/" + url.PathEscape(data.OkmsId.ValueString()) + "/serviceKey/" + url.PathEscape(data.Id.ValueString()) + "?format=JWK"
 
 	if err := d.config.OVHClient.Get(endpoint, &data); err != nil {
 		resp.Diagnostics.AddError(

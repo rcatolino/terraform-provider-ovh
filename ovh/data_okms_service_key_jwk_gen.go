@@ -27,12 +27,6 @@ func OkmsServiceKeyJwkDataSourceSchema(ctx context.Context) schema.Schema {
 		},
 		"id": schema.StringAttribute{
 			CustomType:          ovhtypes.TfStringType{},
-			Computed:            true,
-			Description:         "Key ID",
-			MarkdownDescription: "Key ID",
-		},
-		"key_id": schema.StringAttribute{
-			CustomType:          ovhtypes.TfStringType{},
 			Required:            true,
 			Description:         "Key ID",
 			MarkdownDescription: "Key ID",
@@ -149,7 +143,6 @@ func OkmsServiceKeyJwkDataSourceSchema(ctx context.Context) schema.Schema {
 type OkmsServiceKeyJwkModel struct {
 	CreatedAt ovhtypes.TfStringValue `tfsdk:"created_at" json:"createdAt"`
 	Id        ovhtypes.TfStringValue `tfsdk:"id" json:"id"`
-	KeyId     ovhtypes.TfStringValue `tfsdk:"key_id" json:"keyId"`
 	Jwk       JwkValue               `tfsdk:"jwk" json:"keys"`
 	Name      ovhtypes.TfStringValue `tfsdk:"name" json:"name"`
 	OkmsId    ovhtypes.TfStringValue `tfsdk:"okms_id" json:"okmsId"`
@@ -162,7 +155,6 @@ func (v *OkmsServiceKeyJwkModel) UnmarshalJSON(data []byte) error {
 	type TmpModel struct {
 		CreatedAt ovhtypes.TfStringValue
 		Id        ovhtypes.TfStringValue
-		KeyId     ovhtypes.TfStringValue
 		Keys      []JwkValue
 		Name      ovhtypes.TfStringValue
 		OkmsId    ovhtypes.TfStringValue
@@ -194,10 +186,6 @@ func (v *OkmsServiceKeyJwkModel) MergeWith(other *OkmsServiceKeyJwkModel) {
 
 	if (v.Id.IsUnknown() || v.Id.IsNull()) && !other.Id.IsUnknown() {
 		v.Id = other.Id
-	}
-
-	if (v.KeyId.IsUnknown() || v.KeyId.IsNull()) && !other.KeyId.IsUnknown() {
-		v.KeyId = other.KeyId
 	}
 
 	if (v.Jwk.IsUnknown() || v.Jwk.IsNull()) && !other.Jwk.IsUnknown() {

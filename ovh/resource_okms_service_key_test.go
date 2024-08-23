@@ -138,7 +138,7 @@ resource "ovh_okms" "kms" {
   region = "EU_WEST_SBG"
 }
 
-resource "ovh_okms_service_key" "key_symetric" {
+resource "ovh_okms_service_key" "key_oct" {
   okms_id    = ovh_okms.kms.id
   name       = "%[1]s-sk-oct"
   type       = "oct"
@@ -163,21 +163,36 @@ resource "ovh_okms_service_key" "key_ecdsa" {
   operations = ["sign", "verify"]
 }
 `
-confOkmsServiceKeyDatasourceTest := `
 
-data "ovh_okms_service_key_jwk" "key_rsa_jwk" {
-  okms_id = data.ovh_okms_resource.kms.id
-  key_id  = ovh_okms_service_key.key_rsa.id
+const confOkmsServiceKeyDatasourceTest = `
+data "ovh_okms_service_key" "key_oct" {
+  okms_id = ovh_okms.kms.id
+  id  = ovh_okms_service_key.key_oct.id
 }
 
-data "ovh_okms_service_key_jwk" "key_rsa_jwk" {
-  okms_id = data.ovh_okms_resource.kms.id
-  key_id  = ovh_okms_service_key.key_rsa.id
+data "ovh_okms_service_key" "key_rsa" {
+  okms_id = ovh_okms.kms.id
+  id  = ovh_okms_service_key.key_rsa.id
 }
 
-data "ovh_okms_service_key_jwk" "key_ecdsa_jwk" {
-  okms_id = data.ovh_okms_resource.kms.id
-  key_id  = ovh_okms_service_key.key_ecdsa.id
+data "ovh_okms_service_key" "key_ecdsa" {
+  okms_id = ovh_okms.kms.id
+  id  = ovh_okms_service_key.key_ecdsa.id
+}
+
+data "ovh_okms_service_key_jwk" "key_oct" {
+  okms_id = ovh_okms.kms.id
+  id  = ovh_okms_service_key.key_oct.id
+}
+
+data "ovh_okms_service_key_jwk" "key_rsa" {
+  okms_id = ovh_okms.kms.id
+  id  = ovh_okms_service_key.key_rsa.id
+}
+
+data "ovh_okms_service_key_jwk" "key_ecdsa" {
+  okms_id = ovh_okms.kms.id
+  id  = ovh_okms_service_key.key_ecdsa.id
 }
 
 `
@@ -187,7 +202,7 @@ func getAllChecks(resName string) []statecheck.StateCheck {
 		statecheck.CompareValuePairs(
 			"ovh_okms.kms",
 			tfjsonpath.New("id"),
-			"ovh_okms_service_key.key_symetric",
+			"ovh_okms_service_key.key_oct",
 			tfjsonpath.New("okms_id"),
 			compare.ValuesSame(),
 		),
@@ -206,13 +221,218 @@ func getAllChecks(resName string) []statecheck.StateCheck {
 			compare.ValuesSame(),
 		),
 	}
-	checks = append(checks, kmsServiceKeyStateCommonChecks("ovh_okms_service_key.key_symetric", resName+"-sk-oct")...)
+	checks = append(checks, kmsServiceKeyStateCommonChecks("ovh_okms_service_key.key_oct", resName+"-sk-oct")...)
 	checks = append(checks, kmsServiceKeyStateCommonChecks("ovh_okms_service_key.key_rsa", resName+"-sk-rsa")...)
 	checks = append(checks, kmsServiceKeyStateCommonChecks("ovh_okms_service_key.key_ecdsa", resName+"-sk-ecdsa")...)
-	checks = append(checks, kmsServiceKeyStateSymmetricChecks("ovh_okms_service_key.key_symetric")...)
+	checks = append(checks, kmsServiceKeyStateSymmetricChecks("ovh_okms_service_key.key_oct")...)
 	checks = append(checks, kmsServiceKeyStateRsaChecks("ovh_okms_service_key.key_rsa")...)
 	checks = append(checks, kmsServiceKeyStateECChecks("ovh_okms_service_key.key_ecdsa")...)
 
+	return checks
+}
+
+func kmsServiceKeyDatasourceChecks(resName string, datasourceName string) []statecheck.StateCheck {
+	checks := []statecheck.StateCheck{}
+	for _, key := range []string{
+		"created_at",
+		"curve",
+		"id",
+		"name",
+		"okms_id",
+		"operations",
+		"size",
+		"state",
+		"type",
+	} {
+		checks = append(checks, statecheck.CompareValuePairs(
+			resName,
+			tfjsonpath.New(key),
+			datasourceName,
+			tfjsonpath.New(key),
+			compare.ValuesSame()))
+	}
+
+	return checks
+}
+
+func kmsJwkDatasourceChecks(resName string, datasourceName string) []statecheck.StateCheck {
+	checks := []statecheck.StateCheck{}
+	for _, key := range []string{
+		"created_at",
+		"id",
+		"name",
+		"okms_id",
+		"size",
+		"state",
+		"type",
+	} {
+		checks = append(checks, statecheck.CompareValuePairs(
+			resName,
+			tfjsonpath.New(key),
+			datasourceName,
+			tfjsonpath.New(key),
+			compare.ValuesSame()))
+	}
+
+	checks = append(checks, statecheck.CompareValuePairs(
+		resName,
+		tfjsonpath.New("id"),
+		datasourceName,
+		tfjsonpath.New("jwk").AtMapKey("kid"),
+		compare.ValuesSame()))
+	checks = append(checks, statecheck.CompareValuePairs(
+		resName,
+		tfjsonpath.New("type"),
+		datasourceName,
+		tfjsonpath.New("jwk").AtMapKey("kty"),
+		compare.ValuesSame()))
+
+	return checks
+}
+
+func kmsJwkOctDatasourceChecks(datasourceName string) []statecheck.StateCheck {
+	checks := []statecheck.StateCheck{
+		statecheck.ExpectKnownValue(
+			datasourceName,
+			tfjsonpath.New("jwk").AtMapKey("key_ops"),
+			knownvalue.SetExact(
+				[]knownvalue.Check{
+					knownvalue.StringExact("encrypt"),
+					knownvalue.StringExact("decrypt"),
+				})),
+	}
+
+	for _, key := range []string{
+		"alg",
+		"crv",
+		"e",
+		"n",
+		"use",
+		"x",
+		"y",
+	} {
+		checks = append(
+			checks,
+			statecheck.ExpectKnownValue(
+				datasourceName,
+				tfjsonpath.New("jwk").AtMapKey(key),
+				knownvalue.Null()),
+		)
+	}
+
+	return checks
+}
+
+func kmsJwkRsaDatasourceChecks(datasourceName string) []statecheck.StateCheck {
+	checks := []statecheck.StateCheck{
+		statecheck.ExpectKnownValue(
+			datasourceName,
+			tfjsonpath.New("jwk").AtMapKey("key_ops"),
+			knownvalue.SetExact(
+				[]knownvalue.Check{
+					knownvalue.StringExact("sign"),
+					knownvalue.StringExact("verify"),
+				})),
+	}
+
+	for _, key := range []string{
+		"alg",
+		"crv",
+		"use",
+		"x",
+		"y",
+	} {
+		checks = append(
+			checks,
+			statecheck.ExpectKnownValue(
+				datasourceName,
+				tfjsonpath.New("jwk").AtMapKey(key),
+				knownvalue.Null()),
+		)
+	}
+
+	for _, key := range []string{
+		"e",
+		"n",
+	} {
+		checks = append(
+			checks,
+			statecheck.ExpectKnownValue(
+				datasourceName,
+				tfjsonpath.New("jwk").AtMapKey(key),
+				knownvalue.NotNull()),
+		)
+	}
+
+	return checks
+}
+
+func kmsJwkEcdsaDatasourceChecks(datasourceName string) []statecheck.StateCheck {
+	checks := []statecheck.StateCheck{
+		statecheck.ExpectKnownValue(
+			datasourceName,
+			tfjsonpath.New("jwk").AtMapKey("key_ops"),
+			knownvalue.SetExact(
+				[]knownvalue.Check{
+					knownvalue.StringExact("sign"),
+					knownvalue.StringExact("verify"),
+				})),
+	}
+
+	for _, key := range []string{
+		"alg",
+		"e",
+		"n",
+		"use",
+	} {
+		checks = append(
+			checks,
+			statecheck.ExpectKnownValue(
+				datasourceName,
+				tfjsonpath.New("jwk").AtMapKey(key),
+				knownvalue.Null()),
+		)
+	}
+
+	for _, key := range []string{
+		"crv",
+		"x",
+		"y",
+	} {
+		checks = append(
+			checks,
+			statecheck.ExpectKnownValue(
+				datasourceName,
+				tfjsonpath.New("jwk").AtMapKey(key),
+				knownvalue.NotNull()),
+		)
+	}
+
+	return checks
+}
+
+func getAllDatasourceChecks() []statecheck.StateCheck {
+	// Check non-jwk datasources
+	checks := kmsServiceKeyDatasourceChecks("ovh_okms_service_key.key_oct", "data.ovh_okms_service_key.key_oct")
+	checks = append(
+		checks,
+		kmsServiceKeyDatasourceChecks("ovh_okms_service_key.key_rsa", "data.ovh_okms_service_key.key_rsa")...)
+	checks = append(
+		checks,
+		kmsServiceKeyDatasourceChecks("ovh_okms_service_key.key_ecdsa", "data.ovh_okms_service_key.key_ecdsa")...)
+	// Check jwk datasources
+	checks = append(
+		checks,
+		kmsJwkDatasourceChecks("ovh_okms_service_key.key_oct", "data.ovh_okms_service_key_jwk.key_oct")...)
+	checks = append(
+		checks,
+		kmsJwkDatasourceChecks("ovh_okms_service_key.key_rsa", "data.ovh_okms_service_key_jwk.key_rsa")...)
+	checks = append(
+		checks,
+		kmsJwkDatasourceChecks("ovh_okms_service_key.key_ecdsa", "data.ovh_okms_service_key_jwk.key_ecdsa")...)
+	checks = append(checks, kmsJwkOctDatasourceChecks("data.ovh_okms_service_key_jwk.key_oct")...)
+	checks = append(checks, kmsJwkRsaDatasourceChecks("data.ovh_okms_service_key_jwk.key_rsa")...)
+	checks = append(checks, kmsJwkEcdsaDatasourceChecks("data.ovh_okms_service_key_jwk.key_ecdsa")...)
 	return checks
 }
 
@@ -235,7 +455,7 @@ func TestAccResourceOkmsServiceKey(t *testing.T) {
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectNonEmptyPlan(),
 						plancheck.ExpectResourceAction(
-							"ovh_okms_service_key.key_symetric",
+							"ovh_okms_service_key.key_oct",
 							plancheck.ResourceActionUpdate),
 						plancheck.ExpectResourceAction(
 							"ovh_okms_service_key.key_rsa",
@@ -254,7 +474,7 @@ func TestAccResourceOkmsServiceKey(t *testing.T) {
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectNonEmptyPlan(),
 						plancheck.ExpectResourceAction(
-							"ovh_okms_service_key.key_symetric",
+							"ovh_okms_service_key.key_oct",
 							plancheck.ResourceActionReplace),
 						plancheck.ExpectResourceAction(
 							"ovh_okms_service_key.key_rsa",
@@ -268,11 +488,8 @@ func TestAccResourceOkmsServiceKey(t *testing.T) {
 			},
 			{
 				// Test datasource
-				Config: fmt.Sprintf(confOkmsServiceKeyTest+confOkmsServiceKeyDatasourceTest, kmsName, credName),
-				ConfigStateChecks: append(
-					kmsCredDatasourceChecks("ovh_okms_credential.cred", "data.ovh_okms_credential.data_cred"),
-					kmsCredDatasourceChecks("ovh_okms_credential.credcsr", "data.ovh_okms_credential.data_credcsr")...,
-				),
+				Config:            fmt.Sprintf(confOkmsServiceKeyTest+confOkmsServiceKeyDatasourceTest, resName+"2", "newctx"),
+				ConfigStateChecks: getAllDatasourceChecks(),
 			},
 		},
 	})
