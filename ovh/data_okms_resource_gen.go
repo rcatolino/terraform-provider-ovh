@@ -50,7 +50,7 @@ func OkmsResourceDataSourceSchema(ctx context.Context) schema.Schema {
 		},
 		"id": schema.StringAttribute{
 			CustomType:          ovhtypes.TfStringType{},
-			Computed:            true,
+			Required:            true,
 			Description:         "OKMS ID",
 			MarkdownDescription: "OKMS ID",
 		},
@@ -59,12 +59,6 @@ func OkmsResourceDataSourceSchema(ctx context.Context) schema.Schema {
 			Computed:            true,
 			Description:         "KMS kmip API endpoint",
 			MarkdownDescription: "KMS kmip API endpoint",
-		},
-		"okms_id": schema.StringAttribute{
-			CustomType:          ovhtypes.TfStringType{},
-			Required:            true,
-			Description:         "Okms ID",
-			MarkdownDescription: "Okms ID",
 		},
 		"public_ca": schema.StringAttribute{
 			CustomType:          ovhtypes.TfStringType{},
@@ -102,7 +96,6 @@ type OkmsResourceModel struct {
 	Iam             IamValue               `tfsdk:"iam" json:"iam"`
 	Id              ovhtypes.TfStringValue `tfsdk:"id" json:"id"`
 	KmipEndpoint    ovhtypes.TfStringValue `tfsdk:"kmip_endpoint" json:"kmipEndpoint"`
-	OkmsId          ovhtypes.TfStringValue `tfsdk:"okms_id" json:"okmsId"`
 	PublicCa        ovhtypes.TfStringValue `tfsdk:"public_ca" json:"publicCa"`
 	Region          ovhtypes.TfStringValue `tfsdk:"region" json:"region"`
 	RestEndpoint    ovhtypes.TfStringValue `tfsdk:"rest_endpoint" json:"restEndpoint"`
@@ -121,10 +114,6 @@ func (v *OkmsResourceModel) MergeWith(other *OkmsResourceModel) {
 
 	if (v.KmipEndpoint.IsUnknown() || v.KmipEndpoint.IsNull()) && !other.KmipEndpoint.IsUnknown() {
 		v.KmipEndpoint = other.KmipEndpoint
-	}
-
-	if (v.OkmsId.IsUnknown() || v.OkmsId.IsNull()) && !other.OkmsId.IsUnknown() {
-		v.OkmsId = other.OkmsId
 	}
 
 	if (v.PublicCa.IsUnknown() || v.PublicCa.IsNull()) && !other.PublicCa.IsUnknown() {

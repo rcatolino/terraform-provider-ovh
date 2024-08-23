@@ -149,11 +149,8 @@ type OkmsModel struct {
 	PublicCa        ovhtypes.TfStringValue `tfsdk:"public_ca" json:"publicCa"`
 	RestEndpoint    ovhtypes.TfStringValue `tfsdk:"rest_endpoint" json:"restEndpoint"`
 	SwaggerEndpoint ovhtypes.TfStringValue `tfsdk:"swagger_endpoint" json:"swaggerEndpoint"`
-	// Order           OrderValue                                  `tfsdk:"order" json:"order"`
-	OvhSubsidiary ovhtypes.TfStringValue `tfsdk:"ovh_subsidiary" json:"ovhSubsidiary"`
-	Region        ovhtypes.TfStringValue `tfsdk:"region" json:"region"`
-	// Plan            ovhtypes.TfListNestedValue[PlanValue]       `tfsdk:"plan" json:"plan"`
-	// PlanOption      ovhtypes.TfListNestedValue[PlanOptionValue] `tfsdk:"plan_option" json:"planOption"`
+	OvhSubsidiary   ovhtypes.TfStringValue `tfsdk:"ovh_subsidiary" json:"ovhSubsidiary"`
+	Region          ovhtypes.TfStringValue `tfsdk:"region" json:"region"`
 }
 
 func (v *OkmsModel) ToCreate(ctx context.Context) (*OrderModel, diag.Diagnostics) {
