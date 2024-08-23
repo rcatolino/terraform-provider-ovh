@@ -436,7 +436,7 @@ func getAllDatasourceChecks() []statecheck.StateCheck {
 	return checks
 }
 
-func TestAccResourceOkmsServiceKey(t *testing.T) {
+func TestAccOkmsServiceKey(t *testing.T) {
 	resName := fmt.Sprintf("test-tf-%d", acctest.RandIntRange(10000, 99999))
 
 	resource.Test(t, resource.TestCase{

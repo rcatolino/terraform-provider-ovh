@@ -120,7 +120,7 @@ data "ovh_okms_resource" "datakms" {
 }
 `
 
-func TestAccResourceOkmsOrder(t *testing.T) {
+func TestAcceOkmsOrder(t *testing.T) {
 	compareValuesSame := statecheck.CompareValue(compare.ValuesSame())
 	displayName := acctest.RandomWithPrefix(test_prefix)
 	region := "EU_WEST_SBG"
@@ -169,7 +169,7 @@ func TestAccResourceOkmsOrder(t *testing.T) {
 	})
 }
 
-func TestAccResourceOkmsImport(t *testing.T) {
+func TestAccOkmsImport(t *testing.T) {
 	displayName := acctest.RandomWithPrefix(test_prefix)
 	kmsId := os.Getenv("OVH_OKMS")
 

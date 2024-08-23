@@ -156,7 +156,7 @@ func getAllCredsChecks(resName string, displayName string, resNameCsr string, di
 	return checks
 }
 
-func TestAccResourceOkmsCredCreate(t *testing.T) {
+func TestAccOkmsCredCreate(t *testing.T) {
 	kmsName := acctest.RandomWithPrefix(test_prefix)
 	credName := acctest.RandomWithPrefix(test_prefix)
 
@@ -190,7 +190,7 @@ resource "ovh_okms_credential" "cred" {
 }
 `
 
-func TestAccResourceOkmsCredImport(t *testing.T) {
+func TestAccOkmsCredImport(t *testing.T) {
 	kmsId := os.Getenv("OVH_OKMS")
 	credId := os.Getenv("OVH_OKMS_CREDENTIAL")
 
