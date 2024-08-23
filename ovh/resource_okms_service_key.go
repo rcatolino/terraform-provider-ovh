@@ -44,7 +44,6 @@ func (d *okmsServiceKeyResource) Schema(ctx context.Context, req resource.Schema
 	resp.Schema = OkmsServiceKeyResourceSchema(ctx)
 }
 
-// TODO: add import ?
 func (r *okmsServiceKeyResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data, responseData OkmsServiceKeyResourceModel
 
