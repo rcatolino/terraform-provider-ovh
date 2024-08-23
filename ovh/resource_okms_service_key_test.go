@@ -163,6 +163,24 @@ resource "ovh_okms_service_key" "key_ecdsa" {
   operations = ["sign", "verify"]
 }
 `
+confOkmsServiceKeyDatasourceTest := `
+
+data "ovh_okms_service_key_jwk" "key_rsa_jwk" {
+  okms_id = data.ovh_okms_resource.kms.id
+  key_id  = ovh_okms_service_key.key_rsa.id
+}
+
+data "ovh_okms_service_key_jwk" "key_rsa_jwk" {
+  okms_id = data.ovh_okms_resource.kms.id
+  key_id  = ovh_okms_service_key.key_rsa.id
+}
+
+data "ovh_okms_service_key_jwk" "key_ecdsa_jwk" {
+  okms_id = data.ovh_okms_resource.kms.id
+  key_id  = ovh_okms_service_key.key_ecdsa.id
+}
+
+`
 
 func getAllChecks(resName string) []statecheck.StateCheck {
 	checks := []statecheck.StateCheck{
@@ -247,6 +265,14 @@ func TestAccResourceOkmsServiceKey(t *testing.T) {
 					},
 				},
 				ConfigStateChecks: getAllChecks(resName + "2"),
+			},
+			{
+				// Test datasource
+				Config: fmt.Sprintf(confOkmsServiceKeyTest+confOkmsServiceKeyDatasourceTest, kmsName, credName),
+				ConfigStateChecks: append(
+					kmsCredDatasourceChecks("ovh_okms_credential.cred", "data.ovh_okms_credential.data_cred"),
+					kmsCredDatasourceChecks("ovh_okms_credential.credcsr", "data.ovh_okms_credential.data_credcsr")...,
+				),
 			},
 		},
 	})

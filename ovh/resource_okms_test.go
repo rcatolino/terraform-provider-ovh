@@ -15,6 +15,57 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
 
+func kmsDatasourceStateChecks(displayName string) []statecheck.StateCheck {
+	return []statecheck.StateCheck{
+		statecheck.CompareValuePairs(
+			"ovh_okms.kms",
+			tfjsonpath.New("id"),
+			"data.ovh_okms_resource.datakms",
+			tfjsonpath.New("id"),
+			compare.ValuesSame()),
+		statecheck.ExpectKnownValue(
+			"data.ovh_okms_resource.datakms",
+			tfjsonpath.New("iam").AtMapKey("display_name"),
+			knownvalue.StringExact(displayName)),
+		statecheck.CompareValuePairs(
+			"ovh_okms.kms",
+			tfjsonpath.New("iam").AtMapKey("urn"),
+			"data.ovh_okms_resource.datakms",
+			tfjsonpath.New("iam").AtMapKey("urn"),
+			compare.ValuesSame()),
+		statecheck.CompareValuePairs(
+			"ovh_okms.kms",
+			tfjsonpath.New("public_ca"),
+			"data.ovh_okms_resource.datakms",
+			tfjsonpath.New("public_ca"),
+			compare.ValuesSame()),
+		statecheck.CompareValuePairs(
+			"ovh_okms.kms",
+			tfjsonpath.New("region"),
+			"data.ovh_okms_resource.datakms",
+			tfjsonpath.New("region"),
+			compare.ValuesSame()),
+		statecheck.CompareValuePairs(
+			"ovh_okms.kms",
+			tfjsonpath.New("rest_endpoint"),
+			"data.ovh_okms_resource.datakms",
+			tfjsonpath.New("rest_endpoint"),
+			compare.ValuesSame()),
+		statecheck.CompareValuePairs(
+			"ovh_okms.kms",
+			tfjsonpath.New("kmip_endpoint"),
+			"data.ovh_okms_resource.datakms",
+			tfjsonpath.New("kmip_endpoint"),
+			compare.ValuesSame()),
+		statecheck.CompareValuePairs(
+			"ovh_okms.kms",
+			tfjsonpath.New("swagger_endpoint"),
+			"data.ovh_okms_resource.datakms",
+			tfjsonpath.New("swagger_endpoint"),
+			compare.ValuesSame()),
+	}
+}
+
 func kmsResourceStateChecks(displayName string) []statecheck.StateCheck {
 	urnRe := regexp.MustCompile("urn:v1:eu:resource:okms:.*")
 	return []statecheck.StateCheck{
@@ -65,7 +116,7 @@ resource "ovh_okms" "kms" {
 }
 
 data "ovh_okms_resource" "datakms" {
-  okms_id = ovh_okms.kms.id
+  id = ovh_okms.kms.id
 }
 `
 
@@ -92,6 +143,7 @@ func TestAccResourceOkmsOrder(t *testing.T) {
 				),
 			},
 			{
+				// Test update
 				Config: fmt.Sprintf(confOkmsResourceOrder, displayName+"new", region),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
@@ -107,6 +159,11 @@ func TestAccResourceOkmsOrder(t *testing.T) {
 						"ovh_okms.kms",
 						tfjsonpath.New("id")),
 				),
+			},
+			{
+				// Test datasource
+				Config:            fmt.Sprintf(confOkmsDatasource, displayName+"new", region),
+				ConfigStateChecks: kmsDatasourceStateChecks(displayName + "new"),
 			},
 		},
 	})

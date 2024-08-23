@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/compare"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
@@ -78,6 +79,31 @@ func kmsCredStateNoCsrChecks(resName string) []statecheck.StateCheck {
 	}
 }
 
+func kmsCredDatasourceChecks(resName string, datasourceName string) []statecheck.StateCheck {
+	checks := []statecheck.StateCheck{}
+	for _, key := range []string{
+		"certificate_pem",
+		"created_at",
+		"description",
+		"expired_at",
+		"from_csr",
+		"id",
+		"identity_urns",
+		"name",
+		"okms_id",
+		"status",
+	} {
+		checks = append(checks, statecheck.CompareValuePairs(
+			resName,
+			tfjsonpath.New(key),
+			datasourceName,
+			tfjsonpath.New(key),
+			compare.ValuesSame()))
+	}
+
+	return checks
+}
+
 const confOkmsCredTest = `
 data "ovh_me" "current_account" {
 }
@@ -110,21 +136,49 @@ EOT
 }
 `
 
+const confOkmsDatasourceTest = `
+data "ovh_okms_credential" "data_cred" {
+	okms_id = ovh_okms.kms.id
+	id = ovh_okms_credential.cred.id
+}
+
+data "ovh_okms_credential" "data_credcsr" {
+	okms_id = ovh_okms.kms.id
+	id = ovh_okms_credential.credcsr.id
+}
+`
+
+func getAllCredsChecks(resName string, displayName string, resNameCsr string, displayNameCsr string) []statecheck.StateCheck {
+	checks := kmsCredStateCommonChecks(resNameCsr, displayNameCsr)
+	checks = append(checks, kmsCredStateCommonChecks(resName, displayName)...)
+	checks = append(checks, kmsCredStateNoCsrChecks(resName)...)
+	checks = append(checks, kmsCredStateCsrChecks(resNameCsr)...)
+	return checks
+}
+
 func TestAccResourceOkmsCredCreate(t *testing.T) {
 	kmsName := acctest.RandomWithPrefix(test_prefix)
 	credName := acctest.RandomWithPrefix(test_prefix)
 
-	checks := kmsCredStateCommonChecks("ovh_okms_credential.credcsr", credName+"csr")
-	checks = append(checks, kmsCredStateCommonChecks("ovh_okms_credential.cred", credName)...)
-	checks = append(checks, kmsCredStateNoCsrChecks("ovh_okms_credential.cred")...)
-	checks = append(checks, kmsCredStateCsrChecks("ovh_okms_credential.credcsr")...)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheckOrderOkms(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config:            fmt.Sprintf(confOkmsCredTest, kmsName, credName),
-				ConfigStateChecks: checks,
+				Config: fmt.Sprintf(confOkmsCredTest, kmsName, credName),
+				ConfigStateChecks: getAllCredsChecks(
+					"ovh_okms_credential.cred",
+					credName,
+					"ovh_okms_credential.credcsr",
+					credName+"csr"),
+			},
+			{
+				// Test datasource
+				Config: fmt.Sprintf(confOkmsCredTest+confOkmsDatasourceTest, kmsName, credName),
+				ConfigStateChecks: append(
+					kmsCredDatasourceChecks("ovh_okms_credential.cred", "data.ovh_okms_credential.data_cred"),
+					kmsCredDatasourceChecks("ovh_okms_credential.credcsr", "data.ovh_okms_credential.data_credcsr")...,
+				),
 			},
 		},
 	})
