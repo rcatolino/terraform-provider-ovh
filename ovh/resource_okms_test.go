@@ -57,6 +57,18 @@ resource "ovh_okms" "kms" {
 }
 `
 
+const confOkmsDatasource = `
+resource "ovh_okms" "kms" {
+  ovh_subsidiary = "FR"
+  display_name = "%s"
+  region = "%s"
+}
+
+data "ovh_okms_resource" "datakms" {
+  okms_id = ovh_okms.kms.id
+}
+`
+
 func TestAccResourceOkmsOrder(t *testing.T) {
 	compareValuesSame := statecheck.CompareValue(compare.ValuesSame())
 	displayName := acctest.RandomWithPrefix(test_prefix)

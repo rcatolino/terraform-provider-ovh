@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
@@ -143,7 +144,7 @@ resource "ovh_okms_service_key" "key_symetric" {
   type       = "oct"
   size       = 256
   operations = ["encrypt", "decrypt"]
-  context    = "ctx"
+  context    = "%[2]s"
 }
 
 resource "ovh_okms_service_key" "key_rsa" {
@@ -157,15 +158,13 @@ resource "ovh_okms_service_key" "key_rsa" {
 resource "ovh_okms_service_key" "key_ecdsa" {
   okms_id    = ovh_okms.kms.id
   name       = "%[1]s-sk-ecdsa"
-  type = "EC"
-  curve = "P-256"
+  type       = "EC"
+  curve      = "P-256"
   operations = ["sign", "verify"]
 }
 `
 
-func TestAccResourceOkmsServiceKeyCreate(t *testing.T) {
-	resName := fmt.Sprintf("test-tf-%d", acctest.RandIntRange(10000, 99999))
-
+func getAllChecks(resName string) []statecheck.StateCheck {
 	checks := []statecheck.StateCheck{
 		statecheck.CompareValuePairs(
 			"ovh_okms.kms",
@@ -195,13 +194,59 @@ func TestAccResourceOkmsServiceKeyCreate(t *testing.T) {
 	checks = append(checks, kmsServiceKeyStateSymmetricChecks("ovh_okms_service_key.key_symetric")...)
 	checks = append(checks, kmsServiceKeyStateRsaChecks("ovh_okms_service_key.key_rsa")...)
 	checks = append(checks, kmsServiceKeyStateECChecks("ovh_okms_service_key.key_ecdsa")...)
+
+	return checks
+}
+
+func TestAccResourceOkmsServiceKey(t *testing.T) {
+	resName := fmt.Sprintf("test-tf-%d", acctest.RandIntRange(10000, 99999))
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheckOrderOkms(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config:            fmt.Sprintf(confOkmsServiceKeyTest, resName),
-				ConfigStateChecks: checks,
+				// Test key creation
+				Config:            fmt.Sprintf(confOkmsServiceKeyTest, resName, "ctx"),
+				ConfigStateChecks: getAllChecks(resName),
+			},
+			{
+				// Test name update
+				Config: fmt.Sprintf(confOkmsServiceKeyTest, resName+"2", "ctx"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+						plancheck.ExpectResourceAction(
+							"ovh_okms_service_key.key_symetric",
+							plancheck.ResourceActionUpdate),
+						plancheck.ExpectResourceAction(
+							"ovh_okms_service_key.key_rsa",
+							plancheck.ResourceActionUpdate),
+						plancheck.ExpectResourceAction(
+							"ovh_okms_service_key.key_ecdsa",
+							plancheck.ResourceActionUpdate),
+					},
+				},
+				ConfigStateChecks: getAllChecks(resName + "2"),
+			},
+			{
+				// Test context update
+				Config: fmt.Sprintf(confOkmsServiceKeyTest, resName+"2", "newctx"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+						plancheck.ExpectResourceAction(
+							"ovh_okms_service_key.key_symetric",
+							plancheck.ResourceActionReplace),
+						plancheck.ExpectResourceAction(
+							"ovh_okms_service_key.key_rsa",
+							plancheck.ResourceActionNoop),
+						plancheck.ExpectResourceAction(
+							"ovh_okms_service_key.key_ecdsa",
+							plancheck.ResourceActionNoop),
+					},
+				},
+				ConfigStateChecks: getAllChecks(resName + "2"),
 			},
 		},
 	})
